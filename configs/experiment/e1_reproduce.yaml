@@ -16,6 +16,13 @@ mixing:
 sweep:
   mixing.gen_ratio: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0]
   seed: [0, 1, 2]
+# The reproduction target must be a published, citable result. Record it in
+# docs/references.md and restate it here before running E1 - see docs/references.md.
+reproduction_target:
+  reference: TODO            # citation key from docs/references.md
+  reported_trend: TODO       # the trend as that work states it
+  tolerance: TODO            # what counts as reproduced
 success_criterion: >
-  Recall decreases monotonically with gen_ratio and precision peaks near 0.2.
-  If this is not reproduced, no downstream experiment is interpretable.
+  The trend reported by `reproduction_target.reference` is recovered within its stated
+  tolerance across 3 seeds. If it is not, no downstream experiment is interpretable and
+  the cause must be identified before proceeding to E2.

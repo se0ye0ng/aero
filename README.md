@@ -2,9 +2,14 @@
 
 **A radiometric-consistency study of generative training data for infrared target detection.**
 
-> Generated infrared imagery is widely reported to *degrade* detector performance.
-> This repository tests whether that conclusion is a property of generated data
-> or an artifact of the training protocol and of the fidelity criterion used to judge it.
+> Published results report that mixing generated infrared imagery into a detector's
+> training set *degrades* performance. This repository tests whether that conclusion is a
+> property of generated data or an artifact of the training protocol and of the fidelity
+> criterion used to judge it.
+>
+> Every claim about prior results is anchored to a citation in
+> [`docs/references.md`](docs/references.md). Nothing in this repository derives from
+> non-public material — see [Provenance](#provenance).
 
 **Central hypothesis.** Perceptual similarity (FID / LPIPS / SSIM) does not predict whether
 generated IR data helps a detector. **Radiometric consistency does.**
@@ -104,9 +109,11 @@ python scripts/run_grid.py e1_reproduce --dry-run
 make e1
 ```
 
-**Exit criterion.** Recall falls monotonically with `mixing.gen_ratio`; precision peaks near
-0.2 and then declines. Both trends must hold across 3 seeds. Record the reproduced curve — it
-is Figure 1's baseline and the thing every later result is measured against.
+**Exit criterion.** The trend reported by the published baseline named in
+[`docs/references.md`](docs/references.md) is recovered within its stated tolerance, across
+3 seeds. Fill in that file before starting: **E1 reproduces a citable public result, not an
+impression.** Record the reproduced curve — it is Figure 1's baseline and the thing every
+later result is measured against.
 
 **Compute.** 7 ratios x 3 seeds = **21 runs**, YOLOX-s from scratch (300 epochs — the
 expensive arm, by construction, since scratch training is the reported condition).
@@ -465,6 +472,22 @@ Public datasets only. No proprietary imagery, labels, or specifications are used
 | DroneVehicle | aerial viewpoint, oriented boxes | optional |
 
 See [`docs/datasets.md`](docs/datasets.md) for licences and access.
+
+## Provenance
+
+This repository is built from public sources only, and is written so that fact is checkable
+rather than merely asserted.
+
+- **Prior results** are cited in [`docs/references.md`](docs/references.md). A statement about
+  what previous work found is not made in this repository without a reference beside it.
+- **Data** is public and gated only by the providers' own request forms. See
+  [`docs/datasets.md`](docs/datasets.md).
+- **Baselines** — YOLOX and the generator checkpoints — are public releases. Training
+  hyperparameters follow the upstream YOLOX defaults (300 epochs, batch 64) so that the
+  reproduction arm is a documented public recipe rather than a borrowed configuration.
+- **No proprietary material** of any kind: no imagery, labels, sensor specifications,
+  requirement documents, internal results, or organisation names. This is enforced by
+  `.gitignore` and stated as the first rule in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Reproducibility
 

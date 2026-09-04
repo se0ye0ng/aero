@@ -8,7 +8,7 @@ Every factor below is an explicit dimension of the run grid. Nothing is fixed by
 |---|---|---|
 | `train.pretrained` | `false`, `true` (COCO) | **F1.** Random initialisation maximises the penalty for distribution shift. Production training never starts there. This is the single most likely cause of the reported negative result |
 | `mixing.budget_mode` | `fixed_total`, `additive` | **F3.** Under `fixed_total`, raising the generated ratio removes real data. Under `additive`, real data is held constant and generated data is added. The two answer different questions and imply opposite conclusions |
-| `mixing.gen_ratio` | 0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0 | resolution around the reported inflection near 0.2 |
+| `mixing.gen_ratio` | 0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0 | denser sampling at low fractions, where published effects are reported to be non-monotonic |
 | `data.coverage_split` | `same_scene`, `held_out_scenario` | **F2.** `same_scene` reproduces the reported setup, where generation adds no coverage. `held_out_scenario` withholds a scenario slice from the real training set and lets generation cover it — the condition synthetic data actually exists for |
 | `curation.policy` | `none`, `random`, `fid_topk`, `rfs_topk`, `marginal_ap` | H4. Compared at an equal generated-sample budget |
 | `sensor.model` | `none`, `eo_ir_default`, `matched` | N2. `matched` fits the sensor model to the real set before applying it to generated data |

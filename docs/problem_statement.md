@@ -9,9 +9,11 @@ the scenarios they cannot record.
 
 ## The reported result
 
-Studies that mix generated IR into a detector training set report a negative effect: recall
-falls monotonically with the generated fraction, precision peaks at a low fraction and then
-declines, and the conclusion drawn is that generated data cannot substitute for real data.
+Studies that mix generated IR into a detector training set report a negative effect on
+detection accuracy as the generated fraction grows, and conclude that generated data cannot
+substitute for real data. The specific trends, magnitudes and conditions are recorded per
+source in [`references.md`](references.md); E1 reproduces one named result rather than a
+general impression.
 
 ## The claim of this work
 
