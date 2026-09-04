@@ -1,0 +1,24 @@
+name: antiuav_small
+root: ${paths.data_root}/antiuav410
+modality: thermal
+label_format: coco
+classes: [uav]
+
+splits:
+  train: train
+  val: val
+  test: test
+
+# The operational regime: small, low-contrast targets against sky and terrain clutter.
+coverage_split: held_out_scenario
+held_out_scenario:
+  key: target_pixel_area_bin
+  values: [tiny]                  # boxes below 16 px^2 withheld from the real train split
+
+labels:
+  audit:
+    enabled: true
+    min_iou: 0.6                  # looser: tiny boxes are IoU-sensitive by construction
+    max_centroid_shift_frac: 0.25
+    max_area_ratio_change: 0.50
+    min_target_contrast: 2.0

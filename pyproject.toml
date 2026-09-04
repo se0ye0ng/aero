@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aero-ir"
+version = "0.1.0"
+description = "When does generated infrared data help detection? A radiometric-consistency study."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "numpy>=1.24",
+  "scipy>=1.11",
+  "pandas>=2.0",
+  "hydra-core>=1.3",
+  "omegaconf>=2.3",
+  "pyyaml>=6.0",
+  "tqdm>=4.66",
+  "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+torch = ["torch>=2.2", "torchvision>=0.17"]
+track = ["wandb>=0.16", "dvc>=3.0"]
+detect = ["pycocotools>=2.0.7", "opencv-python-headless>=4.9"]
+deploy = ["onnx>=1.15", "onnxruntime>=1.17"]
+dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.6"]
+
+[project.scripts]
+aero = "aero_ir.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

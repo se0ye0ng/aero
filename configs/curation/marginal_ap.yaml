@@ -1,0 +1,5 @@
+name: marginal_ap
+_target_: aero_ir.curate.selectors.MarginalAPSelector
+budget: ${mixing.gen_ratio}
+proxy: gradient_alignment   # gradient_alignment | influence | holdout_probe
+probe_steps: 200

@@ -1,0 +1,11 @@
+name: dronevehicle
+root: ${paths.data_root}/dronevehicle
+modality: thermal
+label_format: coco
+classes: [car, truck, bus, van, freight_car]
+splits: {train: train, val: val, test: test}
+coverage_split: held_out_scenario
+held_out_scenario: {key: altitude_bin, values: [high]}
+labels:
+  audit: {enabled: true, min_iou: 0.7, max_centroid_shift_frac: 0.15,
+          max_area_ratio_change: 0.35, min_target_contrast: 2.5}

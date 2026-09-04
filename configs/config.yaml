@@ -1,0 +1,38 @@
+defaults:
+  - data: flir_urban
+  - generator: null_passthrough
+  - sensor: none
+  - curation: none
+  - detector: yolox_s
+  - train: scratch
+  - rfs: default
+  - _self_
+
+project: aero-ir
+seed: 0
+seeds: [0, 1, 2]
+
+paths:
+  data_root: ${oc.env:AERO_DATA_ROOT,data}
+  out_root: experiments
+
+mixing:
+  # fixed_total : total image count held constant; generated displaces real
+  # additive    : real count held constant; generated is added on top
+  budget_mode: fixed_total
+  gen_ratio: 0.0
+  total_images: null        # null -> use the full real training split
+
+tracking:
+  wandb:
+    enabled: true
+    project: aero-ir
+    entity: null
+    mode: online            # online | offline | disabled
+  log_artifacts: true
+
+hydra:
+  run:
+    dir: ${paths.out_root}/${now:%Y%m%d-%H%M%S}
+  sweep:
+    dir: ${paths.out_root}/multirun/${now:%Y%m%d-%H%M%S}

@@ -1,0 +1,3 @@
+name: none
+_target_: aero_ir.sensor.pipeline.IRSensorPipeline
+stages: []

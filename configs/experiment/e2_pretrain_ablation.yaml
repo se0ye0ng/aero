@@ -1,0 +1,21 @@
+# @package _global_
+# E2 - the sign-flip test. Identical to E1 with initialisation crossed in.
+defaults:
+  - override /data: flir_urban
+  - override /generator: diffv2ir
+  - override /sensor: none
+  - override /curation: none
+  - override /detector: yolox_s
+  - override /train: scratch
+
+name: e2_pretrain_ablation
+data:
+  coverage_split: same_scene
+mixing:
+  budget_mode: fixed_total
+sweep:
+  train: [scratch, pretrained]
+  mixing.gen_ratio: [0.0, 0.2, 0.4, 0.6]
+  seed: [0, 1, 2]
+primary_readout: >
+  sign of dAP = AP(real+gen) - AP(real), as a function of train.pretrained.

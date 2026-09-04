@@ -1,0 +1,3 @@
+name: random
+_target_: aero_ir.curate.selectors.RandomSelector
+budget: ${mixing.gen_ratio}

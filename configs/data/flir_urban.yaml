@@ -1,0 +1,24 @@
+name: flir_urban
+root: ${paths.data_root}/flir_adas_v2
+modality: thermal
+label_format: coco
+classes: [person, bike, car, motor, bus, truck]
+
+splits:
+  train: images_thermal_train
+  val: images_thermal_val
+  test: video_thermal_test
+
+# F2 - controls whether generation adds coverage or only restyles existing scenes
+coverage_split: same_scene        # same_scene | held_out_scenario
+held_out_scenario:
+  key: time_of_day
+  values: [night]
+
+labels:
+  audit:
+    enabled: true
+    min_iou: 0.7
+    max_centroid_shift_frac: 0.15
+    max_area_ratio_change: 0.35
+    min_target_contrast: 3.0      # in units of local background sigma

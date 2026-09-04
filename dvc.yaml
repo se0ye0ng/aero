@@ -1,0 +1,36 @@
+stages:
+  generate:
+    cmd: python -m aero_ir.cli generate --config-name config
+    deps:
+      - src/aero_ir/generate
+      - configs/generator
+    outs:
+      - data/generated
+
+  audit_labels:
+    cmd: python -m aero_ir.cli audit-labels
+    deps:
+      - data/generated
+      - src/aero_ir/data/labels.py
+    outs:
+      - experiments/label_audit.json
+
+  rfs:
+    cmd: python -m aero_ir.cli rfs
+    deps:
+      - data/generated
+      - src/aero_ir/rfs
+    metrics:
+      - experiments/rfs.json:
+          cache: false
+
+  train:
+    cmd: python -m aero_ir.cli run
+    deps:
+      - data/generated
+      - experiments/label_audit.json
+      - src/aero_ir
+      - configs
+    metrics:
+      - experiments/metrics.json:
+          cache: false

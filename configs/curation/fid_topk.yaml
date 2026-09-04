@@ -1,0 +1,4 @@
+name: fid_topk
+_target_: aero_ir.curate.selectors.PerceptualSelector
+metric: fid                 # per-sample proxy: distance to the real feature centroid
+budget: ${mixing.gen_ratio}

@@ -1,0 +1,8 @@
+name: diffv2ir
+_target_: aero_ir.generate.diffv2ir_adapter.DiffV2IRGenerator
+checkpoint: ${paths.data_root}/checkpoints/diffv2ir
+guidance_scale: 7.5
+steps: 50
+use_segmentation: true
+caption_source: blip
+batch_size: 8

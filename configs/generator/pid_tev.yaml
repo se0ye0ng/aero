@@ -1,0 +1,12 @@
+name: pid_tev
+_target_: aero_ir.generate.tev.TeVConditionedGenerator
+# Temperature / emissivity / reflected-radiance conditioned generation.
+backbone: diffusion
+checkpoint: ${paths.data_root}/checkpoints/pid
+tev:
+  estimate_from: source_pair       # source_pair | learned | provided
+  emissivity_prior: 0.95
+  env_radiance_prior: null
+loss:
+  reconstruction_weight: 1.0
+  tev_space_weight: 0.5

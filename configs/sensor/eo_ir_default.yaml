@@ -1,0 +1,19 @@
+name: eo_ir_default
+_target_: aero_ir.sensor.pipeline.IRSensorPipeline
+# A generic uncooled LWIR profile. Values are documented defaults, not any specific device.
+stages:
+  - _target_: aero_ir.sensor.mtf.MTFBlur
+    cutoff_cycles_per_pixel: 0.35
+    detector_fill_factor: 0.9
+  - _target_: aero_ir.sensor.netd.NETDNoise
+    netd_mK: 50.0
+    scene_response_dn_per_K: 12.0
+  - _target_: aero_ir.sensor.fpn.FixedPatternNoise
+    column_sigma_dn: 0.8
+    pixel_sigma_dn: 0.5
+    nuc_residual_gain_sigma: 0.004
+  - _target_: aero_ir.sensor.agc.AGCQuantise
+    mode: percentile
+    low_percentile: 0.5
+    high_percentile: 99.5
+    bit_depth: 8

@@ -1,0 +1,21 @@
+# @package _global_
+# E1 - reproduce the reported negative result under its original conditions.
+defaults:
+  - override /data: flir_urban
+  - override /generator: diffv2ir
+  - override /sensor: none
+  - override /curation: none
+  - override /detector: yolox_s
+  - override /train: scratch
+
+name: e1_reproduce
+data:
+  coverage_split: same_scene
+mixing:
+  budget_mode: fixed_total
+sweep:
+  mixing.gen_ratio: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0]
+  seed: [0, 1, 2]
+success_criterion: >
+  Recall decreases monotonically with gen_ratio and precision peaks near 0.2.
+  If this is not reproduced, no downstream experiment is interpretable.

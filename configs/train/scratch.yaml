@@ -1,0 +1,10 @@
+name: scratch
+pretrained: false           # F1 - the reported result's condition
+weights: null
+epochs: 300
+batch_size: 64
+optimizer: sgd
+lr: 0.01
+warmup_epochs: 5
+augmentation: default       # identical across every arm, by protocol
+ema: true

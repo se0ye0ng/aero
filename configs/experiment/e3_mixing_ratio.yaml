@@ -1,0 +1,16 @@
+# @package _global_
+# E3 - ratio crossed with budget mode. Separates "generated data harms" from
+# "replacing real data with generated data harms".
+defaults:
+  - override /data: flir_urban
+  - override /generator: diffv2ir
+  - override /sensor: eo_ir_default
+  - override /curation: none
+  - override /detector: yolox_s
+  - override /train: pretrained
+
+name: e3_mixing_ratio
+sweep:
+  mixing.budget_mode: [fixed_total, additive]
+  mixing.gen_ratio: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0]
+  seed: [0, 1, 2]

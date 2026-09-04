@@ -1,0 +1,22 @@
+# @package _global_
+# E5 - small, low-contrast targets with a genuine coverage gap.
+# The condition under which generated data has something to contribute.
+defaults:
+  - override /data: antiuav_small
+  - override /generator: pid_tev
+  - override /sensor: matched
+  - override /curation: rfs_topk
+  - override /detector: yolox_s
+  - override /train: pretrained
+
+name: e5_small_target
+data:
+  coverage_split: held_out_scenario
+mixing:
+  budget_mode: additive
+sweep:
+  mixing.gen_ratio: [0.0, 0.2, 0.4, 0.8]
+  sensor: [none, eo_ir_default, matched]
+  seed: [0, 1, 2]
+analysis:
+  stratify_by: [target_pixel_area, contrast_quartile, polarity, clutter_level]

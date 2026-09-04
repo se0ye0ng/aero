@@ -1,0 +1,10 @@
+name: pretrained
+pretrained: true            # F1 - the production condition
+weights: coco
+epochs: 100
+batch_size: 64
+optimizer: sgd
+lr: 0.005
+warmup_epochs: 3
+augmentation: default
+ema: true

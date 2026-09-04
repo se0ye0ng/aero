@@ -1,0 +1,21 @@
+# @package _global_
+# E4 - curation policies at an equal generated-sample budget.
+# Comparing fid_topk against rfs_topk is the direct test of H1 and H2.
+defaults:
+  - override /data: flir_urban
+  - override /generator: diffv2ir
+  - override /sensor: eo_ir_default
+  - override /curation: rfs_topk
+  - override /detector: yolox_s
+  - override /train: pretrained
+
+name: e4_curation
+mixing:
+  budget_mode: additive
+sweep:
+  curation: [none, random, fid_topk, rfs_topk, marginal_ap]
+  mixing.gen_ratio: [0.2, 0.4]
+  seed: [0, 1, 2]
+analysis:
+  regress_dAP_on: [fid, lpips, rfs_scalar, rfs_vector]
+  report: [spearman, cv_r2]

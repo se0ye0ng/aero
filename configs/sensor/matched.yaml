@@ -1,0 +1,9 @@
+name: matched
+_target_: aero_ir.sensor.pipeline.IRSensorPipeline
+# Sensor parameters fitted to the real training split before being applied to generated data.
+# See aero_ir.sensor.fit.fit_sensor_params.
+fit:
+  enabled: true
+  source_split: train
+  params: [netd_mK, cutoff_cycles_per_pixel, column_sigma_dn, low_percentile, high_percentile]
+stages: ${sensor_stages_from_fit:}

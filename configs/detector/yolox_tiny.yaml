@@ -1,0 +1,5 @@
+name: yolox_tiny
+_target_: aero_ir.detect.yolox_adapter.YOLOXDetector
+arch: yolox-tiny
+input_size: [416, 416]
+num_classes: ${len:${data.classes}}

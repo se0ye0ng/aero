@@ -1,0 +1,37 @@
+# --- data and experiment outputs (tracked by DVC, never by git) ---
+data/*
+!data/.gitkeep
+experiments/*
+!experiments/.gitkeep
+outputs/
+multirun/
+wandb/
+*.pth
+*.onnx
+*.engine
+
+# --- never commit anything from the parent working folder ---
+# This repository must remain publishable. Proprietary material (requirement decks,
+# job descriptions, internal correspondence) lives outside this directory and must
+# never be copied in.
+*.pptx
+*.ppt
+*.docx
+*_internal*
+*confidential*
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# --- os / editor ---
+.DS_Store
+.idea/
+.vscode/

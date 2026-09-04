@@ -1,0 +1,4 @@
+name: null_passthrough
+_target_: aero_ir.generate.null_generator.NullGenerator
+# Identity generator. Used to validate the pipeline end to end without a generative model,
+# and as the control arm for "real + real" runs.
