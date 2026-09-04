@@ -1,10 +1,15 @@
-.PHONY: setup lint test data-flir data-antiuav e1 e2 e3 e4 e5 report deploy-bench verify clean
+.PHONY: setup smoke lint test data-flir data-antiuav e1 e2 e3 e4 e5 report deploy-bench verify clean
 
 PY ?= python3
 
 setup:
 	$(PY) -m pip install -e ".[torch,track,detect,deploy,dev]"
 	pre-commit install
+
+# Transfer check: run this first on a new machine. Needs no GPU and no dataset.
+smoke: lint test
+	@$(PY) -c "import aero_ir, aero_ir.rfs, aero_ir.data.mixing; print('import ok', aero_ir.__version__)"
+	@echo "smoke ok - code transferred intact"
 
 lint:
 	ruff check src tests scripts
