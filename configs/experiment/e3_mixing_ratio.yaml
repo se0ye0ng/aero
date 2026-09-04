@@ -11,6 +11,7 @@ defaults:
 
 name: e3_mixing_ratio
 sweep:
+  generator: [synthetic_baseline, diffv2ir]
   mixing.budget_mode: [fixed_total, additive]
   mixing.gen_ratio: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0]
   seed: [0, 1, 2]

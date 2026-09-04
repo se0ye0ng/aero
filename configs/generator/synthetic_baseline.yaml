@@ -1,0 +1,18 @@
+name: synthetic_baseline
+_target_: aero_ir.generate.synthetic_baseline.SyntheticBaselineGenerator
+# The "real + simulated" arm. Deterministic, unlearned, public - the free option any
+# programme already has. A generative model only earns its place by beating this.
+background_smooth_px: 6.0
+base_temp_k: 290.0
+scene_contrast_k: 8.0
+scene_response_dn_per_K: 12.0
+edge_softness_px: 1.5
+class_delta_k:
+  person: 6.0
+  bike: 2.0
+  car: 4.0
+  motor: 4.5
+  bus: 3.5
+  truck: 3.5
+  uav: 2.5
+  _default: 3.0

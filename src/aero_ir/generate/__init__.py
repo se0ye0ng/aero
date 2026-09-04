@@ -6,5 +6,7 @@ produce and the protocol used to measure it.
 """
 
 from aero_ir.generate.base import Generator
+from aero_ir.generate.null_generator import NullGenerator
+from aero_ir.generate.synthetic_baseline import SyntheticBaselineGenerator
 
-__all__ = ["Generator"]
+__all__ = ["Generator", "NullGenerator", "SyntheticBaselineGenerator"]

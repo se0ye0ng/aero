@@ -1,0 +1,22 @@
+# @package _global_
+# E6 - does model capacity change whether generated data helps?
+# A larger detector has more room to absorb a distribution it was not going to meet at test
+# time; a smaller one may be forced to spend capacity on it. If the effect of generated data
+# depends on capacity, a single-model conclusion does not generalise - and every reported
+# result on this question is single-model.
+defaults:
+  - override /data: flir_urban
+  - override /generator: diffv2ir
+  - override /sensor: eo_ir_default
+  - override /curation: none
+  - override /detector: yolox_s
+  - override /train: pretrained
+
+name: e6_capacity
+mixing:
+  budget_mode: additive
+sweep:
+  detector: [yolox_tiny, yolox_s, yolox_m, yolox_l]
+  mixing.gen_ratio: [0.0, 0.2, 0.4]
+  seed: [0, 1, 2]
+optional: true      # generality check; run after E4 reports

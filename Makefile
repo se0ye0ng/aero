@@ -1,4 +1,4 @@
-.PHONY: setup smoke lint test data-flir data-antiuav e1 e2 e3 e4 e5 report deploy-bench verify clean
+.PHONY: setup smoke lint test data-flir data-antiuav e1 e2 e3 e4 e5 e6 report deploy-bench verify clean
 
 PY ?= python3
 
@@ -43,6 +43,10 @@ e4:
 # E5 - small, low-contrast target regime with a genuine coverage gap
 e5:
 	$(PY) -m aero_ir.cli run experiment=e5_small_target
+
+# E6 - optional capacity sweep (YOLOX tiny/s/m/l)
+e6:
+	$(PY) -m aero_ir.cli run experiment=e6_capacity
 
 report:
 	$(PY) scripts/make_report.py --out experiments/report

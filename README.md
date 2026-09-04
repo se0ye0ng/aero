@@ -2,10 +2,10 @@
 
 **A radiometric-consistency study of generative training data for infrared target detection.**
 
-> Published results report that mixing generated infrared imagery into a detector's
-> training set *degrades* performance. This repository tests whether that conclusion is a
-> property of generated data or an artifact of the training protocol and of the fidelity
-> criterion used to judge it.
+> Published results on whether synthetic and generated imagery helps a detector
+> **disagree with each other**, and the disagreement is unexplained. This repository tests
+> whether it is explained by the training protocol and by the fidelity criterion used to
+> judge the data.
 >
 > Every claim about prior results is anchored to a citation in
 > [`docs/references.md`](docs/references.md). Nothing in this repository derives from
@@ -38,9 +38,16 @@ atmosphere) and by time (flight hours, range slots). Every operational IR detect
 therefore falls back on simulated or generated imagery, and every one of them runs into the
 same question — *can this data be trusted for training, and under what conditions?*
 
-Published attempts to answer it report a negative result: mixing generated IR into the
-training set lowers mAP, and the effect worsens with the mixing ratio. This repository
-reproduces that result, then shows which experimental conditions it depends on.
+The published answers do not agree. Controlled mixing studies report that adding synthetic
+data *helps*, with a non-monotonic optimum. Thermal-specific work reports that synthetic
+training data sits slightly *below* real data in-domain and *above* it on an unseen domain —
+the sign of the effect changes with the evaluation setting alone. Practitioner reports of
+generated IR degrading detection are common and, in the cases that are documented, share a
+set of experimental conditions that would bias the result negative.
+
+Nobody has controlled those conditions and measured which one is responsible. That is what
+this repository does. See [`docs/references.md`](docs/references.md) for the specific
+positions and what each one measured.
 
 ---
 
@@ -53,8 +60,8 @@ after it, because a result that cannot be reproduced cannot be reinterpreted.
 | Phase | Goal | State | Runs |
 |---|---|---|---|
 | [0](#phase-0--scaffold-and-instrumentation) | Scaffold, sensor chain, RFS diagnostic | **done** | 0 |
-| [1](#phase-1--data-layer-and-the-e1-reproduction) | Data layer, detector, **reproduce the negative result** | next | 21 |
-| [2](#phase-2--the-controlled-experiment-f1-f3) | Pretraining and budget ablations — **the sign-flip test** | | 66 |
+| [1](#phase-1--data-layer-and-the-e1-reproduction) | Data layer, detector, **three-arm reproduction** | next | 42 |
+| [2](#phase-2--the-controlled-experiment-f1-f3) | Pretraining and budget ablations — **the sign-flip test** | | 108 |
 | [3](#phase-3--label-audit-and-failure-mode-decomposition-f4-f5) | Label audit, stratified analysis | | 0 |
 | [4](#phase-4--rfs-predictive-power-n1) | Curation policies, **RFS vs FID predictive power** | | 30 |
 | [5](#phase-5--small-target-regime-and-sensor-matching) | Small-target regime with a real coverage gap | | 36 |
@@ -62,6 +69,14 @@ after it, because a result that cannot be reproduced cannot be reinterpreted.
 | [7](#phase-7--deployment-track) | ONNX / INT8 / latency-vs-mAP | | 0 |
 | [8](#phase-8--radiometrically-consistent-3d-generation-n3) | 3D multi-view IR generation | | TBD |
 | [9](#phase-9--outputs) | Preprint, figures, cards | | 0 |
+| [E6](#optional--e6-capacity) | *optional* — does capacity change the effect? | | 36 |
+
+**The three arms.** Every mixing experiment compares **real**, **real + simulated**, and
+**real + generated**. The middle arm is `synthetic_baseline` — a deterministic, unlearned
+pseudo-IR renderer (`src/aero_ir/generate/synthetic_baseline.py`). Without it, a gain over
+real-only could be a gain any crude simulation would also produce, and a loss could be a loss
+any non-real imagery would produce. **The generative model is only interesting to the extent
+it beats the free option.**
 
 ---
 
@@ -94,7 +109,7 @@ reproduction.
 
 | File | What |
 |---|---|
-| `src/aero_ir/data/registry.py` | FLIR ADAS v2 loader. Contract: images as float (H, W) in a consistent intensity unit; boxes `(x, y, w, h)` COCO; metadata carrying the key named by `data.held_out_scenario.key` |
+| `src/aero_ir/data/registry.py` | FLIR ADAS v2 loader, **thermal and the aligned visible split** — the visible images are the input the simulated and generated arms both render from. Contract: images as float (H, W) in a consistent intensity unit; boxes `(x, y, w, h)` COCO; metadata carrying the key named by `data.held_out_scenario.key` |
 | `src/aero_ir/detect/yolox_adapter.py` | `fit()` / `predict()` around the upstream trainer. Augmentation is fixed across arms by protocol |
 | `src/aero_ir/detect/evaluate.py` | `coco_metrics()`; `delta_ap()` is already implemented |
 | `src/aero_ir/cli.py` | dispatch for `run` |
@@ -115,8 +130,13 @@ make e1
 impression.** Record the reproduced curve — it is Figure 1's baseline and the thing every
 later result is measured against.
 
-**Compute.** 7 ratios x 3 seeds = **21 runs**, YOLOX-s from scratch (300 epochs — the
-expensive arm, by construction, since scratch training is the reported condition).
+**Compute.** 2 generators x 7 ratios x 3 seeds = **42 runs**, YOLOX-s from scratch
+(300 epochs — the expensive phase, by construction, since scratch training is the condition
+being tested).
+
+**Also delivers a result on its own.** `synthetic_baseline` versus `diffv2ir` at matched
+ratio and budget answers a question the field mostly assumes: *does the generative step beat
+a crude simulator?* If it does not, that is a finding, and it reframes everything after it.
 
 ---
 
@@ -149,8 +169,9 @@ A null result here is still a result, and a publishable one: it would establish 
 negative finding is robust to the two conditions most likely to explain it, which no
 published work currently shows. Do not treat a null as a failed phase.
 
-**Compute.** E2: 2 x 4 x 3 = 24 runs. E3: 2 x 7 x 3 = 42 runs. **66 runs.** E3 uses pretrained
-initialisation (100 epochs), so it is roughly a third the cost per run of E1.
+**Compute.** E2: 2 inits x 4 ratios x 3 seeds = 24 runs. E3: 2 generators x 2 budget modes
+x 7 ratios x 3 seeds = 84 runs. **108 runs.** E3 uses pretrained initialisation (100 epochs),
+so it is roughly a third the cost per run of E1.
 
 ---
 
@@ -293,6 +314,17 @@ phase collapses into a reconstruction-quality exercise that has already been don
 
 ---
 
+### Optional — E6 capacity
+
+Does the effect of generated data depend on detector capacity? Every published result on this
+question is single-model, so nobody knows. `make e6` sweeps YOLOX tiny/s/m/l. Run it after E4
+reports; if the sign of `dAP` is capacity-dependent, that constrains how any of these
+conclusions may be stated.
+
+**Compute.** 4 sizes x 3 ratios x 3 seeds = 36 runs.
+
+---
+
 ### Phase 9 — outputs
 
 - `scripts/make_report.py` regenerates all five figures and three tables from the runs table.
@@ -381,15 +413,20 @@ schedule.
 
 | Phase | Runs | Init | Epochs | Rough per-run | Wall-clock on 8 GPUs |
 |---|---|---|---|---|---|
-| 1 (E1) | 21 | scratch | 300 | ~2 h | ~6 h |
+| 1 (E1) | 42 | scratch | 300 | ~2 h | ~11 h |
 | 2 (E2) | 24 | mixed | 300 / 100 | ~1.3 h | ~4 h |
-| 2 (E3) | 42 | pretrained | 100 | ~0.7 h | ~4 h |
+| 2 (E3) | 84 | pretrained | 100 | ~0.7 h | ~8 h |
 | 4 (E4) | 30 | pretrained | 100 | ~0.7 h | ~3 h |
 | 5 (E5) | 36 | pretrained | 100 | ~0.7 h | ~3 h |
-| **Total** | **153** | | | | **~20 h** |
+| **core total** | **216** | | | | **~29 h** |
+| E6 (optional) | 36 | pretrained | 100 | ~0.4–1.5 h | ~4 h |
 
 Phases 3, 7 and 9 add no training. Phase 6 is dominated by generator fine-tuning and is
 budgeted separately once Phase 5 reports.
+
+**Cut if the budget is tight**, in this order: E6 entirely; then E3's `fixed_total` half
+(keep `additive`, which is the operationally meaningful mode); then E1's ratios 0.6 and 0.8.
+Never cut seeds — a two-seed result cannot support a claim about a few AP points.
 
 Storage: budget roughly 200 GB for datasets, generated sets and checkpoints combined.
 
