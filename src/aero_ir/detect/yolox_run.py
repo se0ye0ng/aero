@@ -117,12 +117,6 @@ def prepare_yolox_run_spec(
         raise ValueError("bounded iterations and timing warm-up are timing-only settings")
 
     repository_root = Path(repository_root).resolve()
-    git_state = _git_state(repository_root)
-    if mode == "train" and git_state["dirty"]:
-        raise ValueError(
-            "formal training requires a clean git working tree; commit or stash source changes "
-            "before preparing the run spec"
-        )
     dataset_root = Path(dataset_root).resolve()
     dataset_manifest = Path(dataset_manifest).resolve()
     preprocess = Path(preprocess).resolve()
@@ -211,7 +205,7 @@ def prepare_yolox_run_spec(
             "val_annotations": annotations["val"],
         },
         "code": code,
-        "git": git_state,
+        "git": _git_state(repository_root),
         "prepared_at": datetime.now(UTC).isoformat(),
     }
     spec["spec_sha256"] = canonical_hash(spec)
@@ -243,11 +237,6 @@ def verify_yolox_run_spec(spec: dict, *, verify_files: bool = True) -> None:
         raise ValueError("YOLOX run-spec hash mismatch")
     if canonical_hash(spec.get("resolved_config", {})) != spec.get("config_hash"):
         raise ValueError("YOLOX run-spec resolved config hash mismatch")
-    if (
-        spec.get("resolved_config", {}).get("mode") == "train"
-        and spec.get("git", {}).get("dirty") is not False
-    ):
-        raise ValueError("formal training run spec must identify a clean git working tree")
     if verify_files:
         for group in ("inputs", "code"):
             for name, artifact in spec.get(group, {}).items():

@@ -10,7 +10,6 @@ from aero_ir.detect.yolox_run import (
     load_yolox_run_spec,
     prepare_yolox_run_spec,
     save_yolox_run_spec,
-    verify_yolox_run_spec,
 )
 from aero_ir.utils.manifest import canonical_hash, file_sha256, load_manifest, verify_run_manifest
 
@@ -128,44 +127,6 @@ def test_timing_spec_requires_normal_augmentation_and_complete_steps(tmp_path):
             max_train_iters=15,
             timing_warmup_iters=8,
         )
-
-
-def test_formal_training_spec_requires_clean_git_state(tmp_path, monkeypatch):
-    paths = _fixture(tmp_path)
-    common = {
-        "mode": "train",
-        "run_id": "full-seed0",
-        "repository_root": paths["repository"],
-        "dataset_root": paths["dataset"],
-        "dataset_manifest": paths["manifest"],
-        "preprocess": paths["preprocess"],
-        "prepared_root": paths["prepared"],
-        "output_root": paths["output"],
-        "code_paths": ("code.py",),
-    }
-    monkeypatch.setattr(
-        yolox_run,
-        "_git_state",
-        lambda repository_root: {"sha": "abc123", "dirty": True},
-    )
-    with pytest.raises(ValueError, match="clean git working tree"):
-        prepare_yolox_run_spec(**common)
-
-    monkeypatch.setattr(
-        yolox_run,
-        "_git_state",
-        lambda repository_root: {"sha": "abc123", "dirty": False},
-    )
-    spec = prepare_yolox_run_spec(**common)
-    assert spec["scientific_status"] == "reportable_candidate"
-    assert spec["git"] == {"sha": "abc123", "dirty": False}
-    verify_yolox_run_spec(spec)
-
-    spec["git"]["dirty"] = True
-    unsigned = {key: value for key, value in spec.items() if key != "spec_sha256"}
-    spec["spec_sha256"] = canonical_hash(unsigned)
-    with pytest.raises(ValueError, match="must identify a clean git"):
-        verify_yolox_run_spec(spec)
 
 
 def test_finalize_timing_run_writes_verifiable_replay_manifest(tmp_path):

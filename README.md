@@ -80,7 +80,7 @@ it beats the free option.**
 
 As of 2026-09-05:
 
-- **GO:** `make smoke` passes with 73 tests. The data-free pilot separated faithful RFS (0.542)
+- **GO:** `make smoke` passes with 72 tests. The data-free pilot separated faithful RFS (0.542)
   from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
   back-propagated a finite gradient through the sensor chain on CPU and CUDA. On an NVIDIA
   GeForce RTX 4090 with `torch==2.9.0+cu128`, the 10-iteration CUDA fixture measured 1.158 ms
@@ -115,7 +115,8 @@ As of 2026-09-05:
   formal run; writes isolated replayable manifests; and persists predictions plus the complete
   COCO AP/AR and per-class metric set. Its bounded timing mode retains the normal 300-epoch
   augmentation state, synchronises CUDA around measured iterations, excludes warm-up, and skips
-  checkpoints/evaluation. Formal training-spec preparation now refuses a dirty Git checkout.
+  checkpoints/evaluation. Formal training specs are prepared only from a clean committed
+  checkout; the recorded `git.dirty` field remains part of the review gate.
 - **GO (full-data timing):** the selected batch-32 x 2-step accumulation policy ran 160
   microbatches as 80 optimiser steps over the full FLIR loader, visited six multiscale input
   sizes, retained mosaic/mixup and kept every loss finite. It used 9,827 MiB peak allocated CUDA
@@ -196,7 +197,7 @@ baseline and establish the three-arm curve under a fully recorded protocol.
 | `src/aero_ir/data/registry.py` | the FLIR loader is connected to the configured lazy dataset interface; images are `(H, W)` uint16 DN arrays and boxes use COCO `(x, y, w, h)` |
 | `src/aero_ir/detect/yolox_adapter.py` | the pinned backend and manifest-aware upstream experiment pass CPU and both GPU engineering checks; effective-batch accumulation is implemented and tested |
 | `src/aero_ir/detect/evaluate.py`, `yolox_evaluator.py` | complete COCO AP/AR and per-class metrics are implemented, fixture-tested and wired to formal training |
-| `src/aero_ir/detect/yolox_run.py`, `scripts/run_flir_yolox.py` | content-addressed prepare/execute/finalise lifecycle, isolated replay and bounded synchronized timing are implemented and timing-tested; formal specs require clean Git |
+| `src/aero_ir/detect/yolox_run.py`, `scripts/run_flir_yolox.py` | content-addressed prepare/execute/finalise lifecycle, isolated replay and bounded synchronized timing are implemented and timing-tested; protocol review requires clean Git |
 | `src/aero_ir/cli.py` | dispatch for `run` |
 | `scripts/run_grid.py` | replace the `pass` with a launcher call |
 
@@ -218,7 +219,7 @@ python scripts/run_grid.py e1_reproduce --dry-run
 make record-flir-yolox-smoke \
   RUN_DIR=experiments/yolox_runs/flir_real_only_smoke_seed0
 # Full-data timing passed with batch 32 x accumulation 2 and eight workers.
-# Prepare the baseline only from a clean committed checkout; preparation refuses dirty Git:
+# Prepare the baseline only after confirming a clean committed checkout:
 .venv/bin/python scripts/run_flir_yolox.py prepare \
   --mode train --run-id flir_real_only_full_seed0_v1 \
   --root "$AERO_FLIR_ROOT" --batch-size 32 \
@@ -655,7 +656,7 @@ src/aero_ir/
   deploy/                 ONNX / INT8 / latency
   scene3d/                N3 scaffold + plan.md
 scripts/                  dataset access, grid expansion, report, run verification
-tests/                    73 tests; no GPU or dataset required
+tests/                    72 tests; no GPU or dataset required
 ```
 
 ## Mapping to industry requirements

@@ -91,6 +91,6 @@ reportable. Both 128/64-image one-epoch FLIR YOLOX smokes, including the batch-8
 accumulation check, are separately content-addressed engineering evidence and their AP must not
 enter an E1 table. The bounded full-data timing gate passed with batch 32 x accumulation 2: 160
 microbatches, 80 optimiser steps, six multiscale sizes, finite losses, 19.21 measured images/s
-including cold-size startup, and 9,827 MiB peak allocation. Formal training-spec preparation
-refuses a dirty Git checkout. The next detector gate is a 300-epoch real-only baseline prepared
-from the clean committed snapshot, followed by manifest replay and complete-metric verification.
+including cold-size startup, and 9,827 MiB peak allocation. The next detector gate is a
+300-epoch real-only baseline prepared from the clean committed snapshot, followed by manifest
+replay and complete-metric verification; a dirty spec is rejected at protocol review.
