@@ -13,5 +13,8 @@ name: e3_mixing_ratio
 sweep:
   generator: [synthetic_baseline, diffv2ir]
   mixing.budget_mode: [fixed_total, additive]
-  mixing.gen_ratio: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0]
+  # 1.0 is undefined for additive mixing because the real count is held constant.
+  mixing.gen_ratio: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8]
   seed: [0, 1, 2]
+sweep_control:
+  collapse_at_zero_generated: [generator, mixing.budget_mode]

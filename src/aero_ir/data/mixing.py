@@ -52,15 +52,23 @@ def resolve_mix(
     """
     if not 0.0 <= gen_ratio <= 1.0:
         raise ValueError(f"gen_ratio must be in [0, 1], got {gen_ratio}")
+    if n_real_available < 0 or n_gen_available < 0:
+        raise ValueError("available image counts must be non-negative")
+    if total_images is not None and total_images < 0:
+        raise ValueError("total_images must be non-negative")
 
     if budget_mode == "fixed_total":
         total = total_images if total_images is not None else n_real_available
         n_gen = int(round(total * gen_ratio))
         n_real = total - n_gen
     elif budget_mode == "additive":
+        if gen_ratio == 1.0:
+            raise ValueError(
+                "gen_ratio=1 is undefined in additive mode because real images are held constant"
+            )
         n_real = n_real_available if total_images is None else min(total_images, n_real_available)
         # gen_ratio is the generated fraction of the resulting total
-        n_gen = 0 if gen_ratio >= 1.0 else int(round(n_real * gen_ratio / (1.0 - gen_ratio)))
+        n_gen = int(round(n_real * gen_ratio / (1.0 - gen_ratio)))
     else:
         raise ValueError(f"unknown budget_mode: {budget_mode}")
 

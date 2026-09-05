@@ -19,7 +19,8 @@ def sigma_from_cutoff(cutoff_cycles_per_pixel: float) -> float:
     """Gaussian sigma (pixels) whose MTF falls to 1/e at the given cutoff frequency."""
     if cutoff_cycles_per_pixel <= 0:
         raise ValueError("cutoff_cycles_per_pixel must be positive")
-    return 1.0 / (2.0 * math.pi * cutoff_cycles_per_pixel)
+    # A Gaussian PSF has MTF(f) = exp(-2*pi^2*sigma^2*f^2).
+    return 1.0 / (math.sqrt(2.0) * math.pi * cutoff_cycles_per_pixel)
 
 
 class MTFBlur(nn.Module):
@@ -43,8 +44,8 @@ class MTFBlur(nn.Module):
             raise ValueError("detector_fill_factor must be in (0, 1]")
         sigma = sigma_from_cutoff(cutoff_cycles_per_pixel) / math.sqrt(detector_fill_factor)
         log_sigma = torch.tensor(float(math.log(sigma)))
-        self.log_sigma = nn.Parameter(log_sigma) if learnable else nn.Parameter(
-            log_sigma, requires_grad=False
+        self.log_sigma = (
+            nn.Parameter(log_sigma) if learnable else nn.Parameter(log_sigma, requires_grad=False)
         )
 
     @property
@@ -67,8 +68,10 @@ class MTFBlur(nn.Module):
         pad = (k.numel() - 1) // 2
         kh = k.view(1, 1, 1, -1).expand(c, 1, 1, -1)
         kv = k.view(1, 1, -1, 1).expand(c, 1, -1, 1)
-        x = nn.functional.conv2d(nn.functional.pad(x, (pad, pad, 0, 0), mode="reflect"),
-                                 kh, groups=c)
-        x = nn.functional.conv2d(nn.functional.pad(x, (0, 0, pad, pad), mode="reflect"),
-                                 kv, groups=c)
+        x = nn.functional.conv2d(
+            nn.functional.pad(x, (pad, pad, 0, 0), mode="reflect"), kh, groups=c
+        )
+        x = nn.functional.conv2d(
+            nn.functional.pad(x, (0, 0, pad, pad), mode="reflect"), kv, groups=c
+        )
         return x

@@ -56,6 +56,25 @@ class FixedPatternNoise(nn.Module):
         self.offset = (col + pix).to(device=device, dtype=dtype)
         self.gain = gain.to(device=device, dtype=dtype)
 
+    def _load_from_state_dict(
+        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+    ) -> None:
+        # Lazy buffers start empty. Resize them before PyTorch performs its shape checks so a
+        # pattern generated before checkpointing can actually be restored on resume.
+        for name in ("offset", "gain"):
+            key = prefix + name
+            if key in state_dict and getattr(self, name).shape != state_dict[key].shape:
+                setattr(self, name, torch.empty_like(state_dict[key]))
+        super()._load_from_state_dict(
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         h, w = x.shape[-2:]
         if self.offset.numel() == 0 or self.offset.shape != (h, w):

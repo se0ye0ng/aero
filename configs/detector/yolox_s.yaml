@@ -3,3 +3,4 @@ _target_: aero_ir.detect.yolox_adapter.YOLOXDetector
 arch: yolox-s
 input_size: [640, 640]
 num_classes: ${len:${data.classes}}
+backend_version: 0.3.0

@@ -42,10 +42,10 @@ DISTANCES = {"wasserstein": wasserstein, "ks": ks, "mmd": mmd}
 
 
 def reference_floor(real: np.ndarray, distance, n_splits: int = 8, seed: int = 0) -> float:
-    """Distance between two disjoint halves of the real set.
+    """Mean distance between repeated, seeded disjoint halves of the real set.
 
-    This is the irreducible sampling floor. Normalising by it makes RFS interpretable:
-    a value of 1.0 means the generated set is as far from real as real is from itself.
+    This empirical sampling reference makes component scales easier to compare. It is not an
+    irreducible physical floor and can be zero for discrete or constant statistics.
     """
     if real.size < 4:
         return float("nan")

@@ -13,6 +13,18 @@ data:
   coverage_split: same_scene
 mixing:
   budget_mode: fixed_total
+# Keep optimization fixed so the sweep isolates initialization/weights rather than comparing
+# two different training recipes. Schedule ablations, if desired, are a separate experiment.
+train:
+  epochs: 100
+  per_device_batch_size: 8
+  gradient_accumulation_steps: 8
+  effective_batch_size: 64
+  optimizer: sgd
+  lr: 0.005
+  warmup_epochs: 3
+  augmentation: default
+  ema: true
 sweep:
   train: [scratch, pretrained]
   mixing.gen_ratio: [0.0, 0.2, 0.4, 0.6]

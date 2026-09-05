@@ -1,19 +1,23 @@
 name: antiuav_small
-root: ${paths.data_root}/antiuav410
-modality: thermal
-label_format: coco
+paired_source_root: ${paths.data_root}/Anti-UAV300
+external_eval_root: ${paths.data_root}/Anti-UAV410
+modality: visible_thermal_source__thermal_external
+label_format: antiuav_tracking
 classes: [uav]
 
 splits:
-  train: train
-  val: val
-  test: test
+  generator_development: Anti-UAV300/train
+  detector_train: Anti-UAV300/train
+  validation: Anti-UAV300/val
+  external_test: Anti-UAV410/test
 
 # The operational regime: small, low-contrast targets against sky and terrain clutter.
-coverage_split: held_out_scenario
-held_out_scenario:
-  key: target_pixel_area_bin
-  values: [tiny]                  # boxes below 16 px^2 withheld from the real train split
+coverage_split: sequence_disjoint
+sequence_policy:
+  group_key: video_id
+  prohibit_frame_overlap: true
+  prohibit_generator_access_to_validation_or_test: true
+  tracking_to_detection_adapter_required: true
 
 labels:
   audit:

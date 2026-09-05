@@ -17,5 +17,6 @@ sweep:
   mixing.gen_ratio: [0.2, 0.4]
   seed: [0, 1, 2]
 analysis:
-  regress_dAP_on: [fid, lpips, rfs_scalar, rfs_vector]
-  report: [spearman, cv_r2]
+  regress_dAP_on: [fid, lpips, ssim, sdqm, ccdm, rfs_scalar, rfs_vector]
+  report: [spearman, grouped_cv_r2, leave_one_generator_out, leave_one_domain_out]
+  group_key: generated_pool_id

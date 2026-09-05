@@ -38,3 +38,8 @@ def test_ratio_out_of_range():
 def test_unknown_budget_mode():
     with pytest.raises(ValueError, match="budget_mode"):
         resolve_mix(100, 100, gen_ratio=0.1, budget_mode="whatever")
+
+
+def test_one_ratio_is_rejected_in_additive_mode():
+    with pytest.raises(ValueError, match="undefined in additive"):
+        resolve_mix(100, 100, gen_ratio=1.0, budget_mode="additive")

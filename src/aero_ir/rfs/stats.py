@@ -24,6 +24,10 @@ COMPONENTS = {
     "R8": "column_structure_energy",
 }
 
+# These statistics have named coordinates (frequency bins or histogram summaries). They must
+# remain matrices shaped (images, coordinates); flattening would discard coordinate identity.
+VECTOR_COMPONENTS = {"R4", "R5", "R7"}
+
 
 def _box_slices(box, shape):
     x, y, w, h = (int(round(v)) for v in box)
@@ -167,7 +171,7 @@ def image_set_statistics(images, boxes_per_image, cfg) -> dict[str, np.ndarray]:
     hp = float(getattr(cfg, "highpass_sigma_px", 1.5))
     acc: dict[str, list[np.ndarray]] = {k: [] for k in wanted}
 
-    for img, boxes in zip(images, boxes_per_image, strict=False):
+    for img, boxes in zip(images, boxes_per_image, strict=True):
         img = np.asarray(img, dtype=np.float64)
         if "R1" in wanted:
             acc["R1"].append(target_background_delta(img, boxes, ann))
@@ -186,7 +190,12 @@ def image_set_statistics(images, boxes_per_image, cfg) -> dict[str, np.ndarray]:
         if "R8" in wanted:
             acc["R8"].append(column_structure_energy(img, hp))
 
-    return {
-        k: (np.concatenate(v) if v else np.asarray([], dtype=np.float64))
-        for k, v in acc.items()
-    }
+    out: dict[str, np.ndarray] = {}
+    for key, values in acc.items():
+        if not values:
+            out[key] = np.asarray([], dtype=np.float64)
+        elif key in VECTOR_COMPONENTS:
+            out[key] = np.stack(values)
+        else:
+            out[key] = np.concatenate(values)
+    return out

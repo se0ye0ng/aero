@@ -3,9 +3,14 @@
 RFS is a **diagnostic vector**, not a single number. A scalar would hide exactly the
 information the study needs: *which* physical property the generator failed to preserve.
 
-Each component is computed on a set of images with labels, producing a distribution.
+Each component is computed on a set of images with boxes, producing a distribution.
 Generated and real sets are compared by a distributional distance
 (1-D Wasserstein by default; MMD and two-sample KS available).
+
+The current scaffold pools object-level R1/R2/R3/R6 across classes. Class-conditioned
+aggregation, a declared rule for undefined statistics, and a frozen real-set reference split
+are Phase 1 gates. Until those land, the implementation is suitable for diagnostic pilots but
+not for the central class-conditional claim.
 
 ## Components
 
@@ -29,14 +34,17 @@ distances:
 RFS = sum_i w_i * d_i(P_gen, P_real) / d_i_ref
 ```
 
-where `d_i_ref` is the distance between two disjoint halves of the *real* set — the
-irreducible sampling floor. `RFS = 1` therefore means "as far from real as real is from
-itself". Weights default to uniform; `configs/rfs/` allows re-weighting, and the weight
-sensitivity of every conclusion is reported.
+where `d_i_ref` is the distance between two deterministically chosen disjoint halves of the
+*real* set — an empirical sampling reference, not an irreducible physical constant. An RFS
+component of 1 therefore means that its generated-to-real distance equals that one real-to-real
+split. If the reference distance is zero, an exact match scores 0 and a nonzero mismatch scores
+infinity rather than being silently erased. Weights default to uniform; `configs/rfs/` allows
+re-weighting, and the weight sensitivity of every conclusion is reported.
 
 ## What RFS is tested against
 
 RFS is only interesting if it predicts something. The evaluation is: across all runs in
-E3 and E4, regress `dAP` on (a) FID, (b) LPIPS, (c) the RFS scalar, and (d) the RFS vector.
-Report Spearman correlation and cross-validated predictive R^2 for each. **H2 requires that
-(c) and (d) beat (a) and (b).** If they do not, that is the paper's result.
+E3 and E4, regress `dAP` on FID, LPIPS, SSIM, SDQM, CCDM, the RFS scalar, and the RFS vector.
+Report Spearman correlation and grouped cross-validated predictive R^2, including held-out
+generator and held-out-domain tests. **H2 requires that RFS beat both perceptual and recent
+detection-specific baselines out of group.** If it does not, that is the paper's result.

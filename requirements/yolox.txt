@@ -1,0 +1,2 @@
+# Official Megvii YOLOX 0.3.0 source release, pinned by the PyPI artifact hash.
+yolox==0.3.0 --hash=sha256:1b8ee68846434408c40074f0806259fe3b9387181e562dbc435ea666533d8d08

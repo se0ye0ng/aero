@@ -1,6 +1,9 @@
 name: flir_urban
-root: ${paths.data_root}/flir_adas_v2
+root: ${paths.data_root}/FLIR_ADAS_v2
+manifest: ${oc.env:AERO_FLIR_MANIFEST,experiments/flir_trainval_manifest.json}
+preprocess: ${oc.env:AERO_FLIR_PREPROCESS,experiments/flir_preprocess.json}
 modality: thermal
+representation: analytics16   # 16-bit T-linear TIFF; use display8 only as an explicit ablation
 label_format: coco
 classes: [person, bike, car, motor, bus, truck]
 

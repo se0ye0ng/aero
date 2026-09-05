@@ -1,6 +1,8 @@
-.PHONY: setup smoke lint test data-flir data-antiuav e1 e2 e3 e4 e5 e6 report deploy-bench verify clean
+.PHONY: setup smoke lint test pilot-phase0 audit-flir manifest-flir preprocess-flir prepare-flir-yolox record-flir-yolox-smoke prepare-flir-yolox-timing run-flir-yolox pilot-flir-rfs audit-antiuav300 pilot-antiuav300-rfs data-flir data-antiuav e1 e2 e3 e4 e5 e6 report deploy-bench verify replay clean
 
 PY ?= python3
+FLIR_ARCHIVE_ARG = $(if $(AERO_FLIR_ARCHIVE),--archive "$(AERO_FLIR_ARCHIVE)")
+ANTIUAV300_ARCHIVE_ARG = $(if $(AERO_ANTIUAV300_ARCHIVE),--archive "$(AERO_ANTIUAV300_ARCHIVE)")
 
 setup:
 	$(PY) -m pip install -e ".[torch,track,detect,deploy,dev]"
@@ -8,15 +10,65 @@ setup:
 
 # Transfer check: run this first on a new machine. Needs no GPU and no dataset.
 smoke: lint test
-	@$(PY) -c "import aero_ir, aero_ir.rfs, aero_ir.data.mixing; print('import ok', aero_ir.__version__)"
+	@PYTHONPATH=src $(PY) -c "import aero_ir, aero_ir.rfs, aero_ir.data.mixing; print('import ok', aero_ir.__version__)"
 	@echo "smoke ok - code transferred intact"
 
 lint:
-	ruff check src tests scripts
-	ruff format --check src tests scripts
+	$(PY) -m ruff check src tests scripts
+	$(PY) -m ruff format --check src tests scripts
 
 test:
-	pytest
+	PYTHONPATH=src $(PY) -m pytest
+
+# Data-free RFS separation check plus sensor-chain forward/backward timing.
+pilot-phase0:
+	PYTHONPATH=src $(PY) scripts/run_phase0_pilot.py --device auto --out experiments/phase0_pilot.json
+
+audit-flir:
+	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/audit_flir.py --root "$(AERO_FLIR_ROOT)" \
+		--video-map "$(AERO_FLIR_ROOT)/../rgb_to_thermal_vid_map.json" $(FLIR_ARCHIVE_ARG)
+
+manifest-flir:
+	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/build_flir_manifest.py --root "$(AERO_FLIR_ROOT)"
+
+preprocess-flir:
+	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/fit_flir_preprocess.py --root "$(AERO_FLIR_ROOT)"
+
+prepare-flir-yolox:
+	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/prepare_flir_yolox.py --root "$(AERO_FLIR_ROOT)"
+
+record-flir-yolox-smoke:
+	@test -n "$(RUN_DIR)" || { echo "set RUN_DIR" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/record_flir_yolox_smoke.py --run-dir "$(RUN_DIR)"
+
+prepare-flir-yolox-timing:
+	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }
+	@test -n "$(RUN_ID)" || { echo "set RUN_ID" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/run_flir_yolox.py prepare --mode timing \
+		--run-id "$(RUN_ID)" --root "$(AERO_FLIR_ROOT)" \
+		--max-train-iters "$(or $(TIMING_ITERS),96)" \
+		--timing-warmup-iters "$(or $(TIMING_WARMUP_ITERS),16)"
+
+run-flir-yolox:
+	@test -n "$(SPEC)" || { echo "set SPEC" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/run_flir_yolox.py execute --spec "$(SPEC)"
+
+pilot-flir-rfs:
+	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/run_flir_rfs_pilot.py --root "$(AERO_FLIR_ROOT)"
+
+audit-antiuav300:
+	@test -n "$(AERO_ANTIUAV300_ROOT)" || { echo "set AERO_ANTIUAV300_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/audit_antiuav300.py --root "$(AERO_ANTIUAV300_ROOT)" \
+		$(ANTIUAV300_ARCHIVE_ARG)
+
+pilot-antiuav300-rfs:
+	@test -n "$(AERO_ANTIUAV300_ROOT)" || { echo "set AERO_ANTIUAV300_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/run_antiuav300_rfs_pilot.py --root "$(AERO_ANTIUAV300_ROOT)"
 
 data-flir:
 	bash scripts/download_flir.sh
@@ -24,7 +76,7 @@ data-flir:
 data-antiuav:
 	bash scripts/download_antiuav.sh
 
-# E1 - reproduce the reported negative result under its original conditions
+# E1 - transfer the published fixed-total mixing protocol to IR detection
 e1:
 	$(PY) -m aero_ir.cli run experiment=e1_reproduce
 
@@ -40,7 +92,7 @@ e3:
 e4:
 	$(PY) -m aero_ir.cli run experiment=e4_curation
 
-# E5 - small, low-contrast target regime with a genuine coverage gap
+# E5 - sequence-disjoint small-target external validation
 e5:
 	$(PY) -m aero_ir.cli run experiment=e5_small_target
 
@@ -56,6 +108,9 @@ deploy-bench:
 
 verify:
 	$(PY) scripts/verify_run.py --run $(RUN)
+
+replay:
+	$(PY) scripts/verify_run.py --run $(RUN) --execute
 
 clean:
 	rm -rf outputs multirun .pytest_cache .ruff_cache

@@ -2,7 +2,7 @@
 
 Labels are carried across the generation step. If generation displaces or deforms an object,
 the box no longer marks the object, and the resulting degradation is attributed to
-"generated data" when it belongs to the label pipeline. Nothing in the reported negative
+"generated data" when it belongs to the label pipeline. Nothing in the observed downstream
 results measures this.
 
 Every generated image is audited before it can enter a training set. Failures are excluded

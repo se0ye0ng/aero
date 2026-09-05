@@ -70,7 +70,8 @@ class AGCQuantise(nn.Module):
         else:
             q = torch.tensor(
                 [self.low_percentile / 100.0, self.high_percentile / 100.0],
-                device=x.device, dtype=x.dtype,
+                device=x.device,
+                dtype=x.dtype,
             )
             qs = torch.quantile(flat, q, dim=1)
             lo, hi = qs[0].unsqueeze(1), qs[1].unsqueeze(1)
@@ -81,7 +82,7 @@ class AGCQuantise(nn.Module):
         lo, hi = self._limits(x)
         scale = (hi - lo).clamp_min(torch.finfo(x.dtype).eps)
         y = ((x - lo) / scale).clamp(0.0, 1.0)
-        levels = float(2 ** self.bit_depth - 1)
+        levels = float(2**self.bit_depth - 1)
         if self.soft_quantise:
             y = y + (torch.round(y * levels) / levels - y).detach() * 0.5
         else:

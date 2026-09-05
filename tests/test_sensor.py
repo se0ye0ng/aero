@@ -4,7 +4,13 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from aero_ir.sensor import AGCQuantise, FixedPatternNoise, IRSensorPipeline, MTFBlur, NETDNoise
+from aero_ir.sensor import (  # noqa: E402
+    AGCQuantise,
+    FixedPatternNoise,
+    IRSensorPipeline,
+    MTFBlur,
+    NETDNoise,
+)
 
 
 def _x(b=2, c=1, h=64, w=64):
@@ -12,9 +18,14 @@ def _x(b=2, c=1, h=64, w=64):
 
 
 def test_pipeline_preserves_shape():
-    pipe = IRSensorPipeline([
-        MTFBlur(0.35), NETDNoise(50.0, 12.0), FixedPatternNoise(), AGCQuantise(),
-    ])
+    pipe = IRSensorPipeline(
+        [
+            MTFBlur(0.35),
+            NETDNoise(50.0, 12.0),
+            FixedPatternNoise(),
+            AGCQuantise(),
+        ]
+    )
     x = _x()
     assert pipe(x).shape == x.shape
 
@@ -49,3 +60,22 @@ def test_fixed_pattern_noise_is_fixed():
     fpn = FixedPatternNoise()
     x = _x(b=1)
     assert torch.equal(fpn(x) - x, fpn(x) - x)
+
+
+def test_lazy_fixed_pattern_noise_survives_checkpoint_reload():
+    x = _x(b=1, h=32, w=48)
+    original = FixedPatternNoise()
+    expected = original(x)
+    restored = FixedPatternNoise()
+    restored.load_state_dict(original.state_dict())
+    assert torch.equal(restored(x), expected)
+
+
+def test_pipeline_applies_to_numpy_images():
+    import numpy as np
+
+    pipeline = IRSensorPipeline([AGCQuantise(mode="minmax")])
+    outputs = pipeline.apply_numpy([np.arange(64, dtype=np.float32).reshape(8, 8)])
+    assert len(outputs) == 1
+    assert outputs[0].shape == (8, 8)
+    assert 0.0 <= float(outputs[0].min()) <= float(outputs[0].max()) <= 1.0

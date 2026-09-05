@@ -1,8 +1,10 @@
 # Roadmap
 
 ## N1 — Radiometric Fidelity Score (core)
-Diagnostic vector, distributional distances, and the predictive-power evaluation against
-FID / LPIPS. Delivers H1, H2, and the curation policy for H4.
+Diagnostic vector, distributional distances, and held-out predictive-power evaluation against
+FID / LPIPS / SSIM and detection-specific SDQM / CCDM baselines. The central question is whether
+sensor-aware features add value across unseen generators and domains. Delivers H1, H2, and the
+curation policy for H4 if the evidence supports them.
 Modules: `aero_ir.rfs`, `aero_ir.curate`.
 
 ## N2 — Sensor-in-the-loop generation

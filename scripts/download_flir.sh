@@ -3,17 +3,21 @@
 # Nothing is downloaded automatically: the dataset is distributed under a request form.
 set -euo pipefail
 
-DEST="${AERO_DATA_ROOT:-data}/flir_adas_v2"
+DEST="${AERO_FLIR_ROOT:-${AERO_DATA_ROOT:-data}/FLIR_ADAS_v2}"
 
 cat <<'MSG'
 Teledyne FLIR ADAS Thermal Dataset v2
 -------------------------------------
 1. Request access via the Teledyne FLIR ADAS dataset form (a mirror also exists on Kaggle).
-2. Extract the archive so that the following exist:
+2. Extract the archive so that the following thermal directories exist:
      <dest>/images_thermal_train/
      <dest>/images_thermal_val/
      <dest>/video_thermal_test/
-3. Re-run this script to verify the layout and record checksums.
+3. Preserve the visible/RGB data distributed with FLIR. The Phase 1 loader must create an
+   immutable pair manifest and may use only pairs that pass a registration audit; do not infer
+   pairs from matching numeric COCO ids because the official still-image counts differ.
+4. Re-run this script to verify the thermal layout, then run `make audit-flir` to record
+   annotation hashes and integrity checks under experiments/.
 
 Licence: see the terms accompanying the download. Do not redistribute.
 MSG
@@ -32,5 +36,4 @@ for split in images_thermal_train images_thermal_val video_thermal_test; do
   echo "$split: $n images"
 done
 
-find "$DEST" -maxdepth 2 -name "*.json" -exec shasum -a 256 {} \; > "$DEST/checksums.txt"
-echo "wrote $DEST/checksums.txt"
+echo "layout ok - run 'make audit-flir' for annotation hashes and integrity checks"

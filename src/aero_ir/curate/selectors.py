@@ -80,8 +80,9 @@ class MarginalAPSelector:
 
     name = "marginal_ap"
 
-    def __init__(self, budget: float = 0.0, proxy: str = "gradient_alignment",
-                 probe_steps: int = 200) -> None:
+    def __init__(
+        self, budget: float = 0.0, proxy: str = "gradient_alignment", probe_steps: int = 200
+    ) -> None:
         self.budget = budget
         self.proxy = proxy
         self.probe_steps = probe_steps

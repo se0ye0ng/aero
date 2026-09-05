@@ -7,44 +7,39 @@ angle, atmospheric condition and time of day are all bounded by physics and by s
 Programmes therefore substitute simulated imagery, and increasingly generative imagery, for
 the scenarios they cannot record.
 
-## The reported result
+## The observed research landscape
 
-Studies that mix generated IR into a detector training set report a negative effect on
-detection accuracy as the generated fraction grows, and conclude that generated data cannot
-substitute for real data. The specific trends, magnitudes and conditions are recorded per
-source in [`references.md`](references.md); E1 reproduces one named result rather than a
-general impression.
+Published downstream effects vary with the dataset, task and mixing protocol. Recent work also
+introduces task-aware synthetic-data metrics and task-oriented IR generation. The specific
+results and direct competitors are recorded in [`references.md`](references.md). E1 transfers
+one named fixed-total mixing protocol to IR; it is not an exact reproduction.
 
 ## The claim of this work
 
-That conclusion is under-determined by the evidence. It rests on two things that are
-properties of the experiment rather than of the data:
+The testable claim is narrower: sensor-aware radiometric features may explain additional
+variation in detector utility after controlling two properties of the experiment:
 
-1. **A fidelity criterion misaligned with the detector.** Generated IR is judged by perceptual
-   similarity — SSIM, PSNR, LPIPS, FID. A detector does not consume perceptual similarity. It
-   consumes target-background contrast, thermal polarity, edge energy at the target scale, and
-   the noise floor it has to separate signal from. Two images can be perceptually close and
-   radiometrically incompatible.
+1. **A fidelity criterion that may omit sensor-specific variables.** Perceptual and recent
+   detection-specific metrics are strong baselines, but they do not explicitly model thermal
+   polarity, sensor noise, MTF or fixed-pattern structure.
 
-2. **An uncontrolled training protocol.** Random initialisation, generated data drawn from the
-   same scenes as the real data, and a mixing ratio confounded with total dataset size each
-   independently bias the measured effect toward negative.
+2. **A varying training protocol.** Initialisation, scenario overlap and whether generated data
+   replaces or adds to real data can change the question being answered. They are controlled or
+   crossed here rather than assumed to have a particular direction of bias.
 
 ## Hypotheses
 
-- **H1** Perceptual fidelity metrics (FID, LPIPS, SSIM) have low predictive power for the
-  downstream change in detection AP caused by adding generated data.
-- **H2** A radiometric consistency vector (see `rfs_spec.md`) has substantially higher
-  predictive power for the same quantity.
-- **H3** The sign of the effect of adding generated data flips from negative to positive under
-  identified conditions — specifically pretrained initialisation combined with a genuine
-  scenario coverage gap.
+- **H1** Perceptual fidelity metrics (FID, LPIPS, SSIM) have lower held-out predictive power
+  than task-aware baselines for the downstream AP change caused by adding generated data.
+- **H2** A radiometric consistency vector (see `rfs_spec.md`) adds held-out predictive power
+  over perceptual metrics and recent detection-specific metrics (SDQM and CCDM).
+- **H3** The effect of adding generated data interacts with initialisation and budget mode.
+  Its direction and magnitude are empirical outcomes, not assumptions.
 - **H4** Selecting generated samples by radiometric consistency outperforms random mixing and
   outperforms selection by perceptual fidelity, at an equal generated-sample budget.
 
-Each hypothesis is falsifiable, and a null result for H2 or H3 is still a reportable finding:
-it would establish that the negative result is robust to the conditions tested here, which no
-published work currently shows.
+Each hypothesis is falsifiable. A null result for H2 or H3 remains reportable within the tested
+detectors, generators and domains; it does not establish a field-wide conclusion.
 
 ## Non-goals
 
@@ -61,8 +56,9 @@ published work currently shows.
 | Visible-to-IR diffusion with vision-language conditioning | high-quality IR translation | no downstream detection evaluation |
 | Physics-informed IR diffusion (temperature / emissivity / reflected-radiance decomposition) | physical priors inside the generator | evaluated only on SSIM / PSNR / LPIPS / FID — **no downstream task** |
 | Physically consistent thermal 3D Gaussian splatting | radiometric novel-view synthesis | reconstruction quality, not detection utility |
-| Synthetic data quality metrics; online data curation by marginal AP contribution | utility-aware data selection | domain-agnostic; no sensor or radiometric physics |
+| SDQM and CCDM synthetic-data quality metrics; online curation by marginal AP | utility-aware detection-data evaluation and selection | no explicit EO/IR sensor or radiometric model |
+| Task-oriented infrared diffusion | spectral physical consistency plus downstream detection/segmentation | does not establish a generator/domain-held-out radiometric utility predictor |
 
-The unoccupied position is the **link between the physics and the downstream utility**.
-Physics-informed generation exists. Utility-aware curation exists. Nothing connects them, and
-nothing evaluates physically-conditioned IR generation on the task the data is generated for.
+The proposed position is therefore the **held-out predictive link between sensor/radiometric
+statistics and downstream utility**, evaluated against current task-aware baselines. Whether
+that position is empirically useful is the central experiment, not a premise.

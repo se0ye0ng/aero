@@ -2,7 +2,11 @@ name: scratch
 pretrained: false           # F1 - the reported result's condition
 weights: null
 epochs: 300
-batch_size: 64
+# Single-RTX-4090 starting point. The adapter must accumulate before each optimiser step so
+# this preserves a global effective batch of 64; lower per-device size if the timing pilot OOMs.
+per_device_batch_size: 8
+gradient_accumulation_steps: 8
+effective_batch_size: 64
 optimizer: sgd
 lr: 0.01
 warmup_epochs: 5

@@ -1,0 +1,9 @@
+# CPU/training imports required by the pinned YOLOX release on Python 3.11.
+# Torch and torchvision are installed from the matching official PyTorch CUDA index.
+loguru==0.7.3
+ninja==1.13.2
+scikit-image==0.26.0
+tabulate==0.10.0
+tensorboard==2.21.0
+thop==0.1.1.post2209072238
+wheel==0.48.0

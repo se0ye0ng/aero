@@ -2,17 +2,18 @@
 
 **A radiometric-consistency study of generative training data for infrared target detection.**
 
-> Published results on whether synthetic and generated imagery helps a detector
-> **disagree with each other**, and the disagreement is unexplained. This repository tests
-> whether it is explained by the training protocol and by the fidelity criterion used to
-> judge the data.
+> Published downstream effects vary with dataset, task and protocol. This repository tests a
+> narrower question: whether sensor-aware radiometric statistics add held-out predictive value
+> for infrared detector training data.
 >
 > Every claim about prior results is anchored to a citation in
 > [`docs/references.md`](docs/references.md). Nothing in this repository derives from
 > non-public material — see [Provenance](#provenance).
 
-**Central hypothesis.** Perceptual similarity (FID / LPIPS / SSIM) does not predict whether
-generated IR data helps a detector. **Radiometric consistency does.**
+**Central hypothesis.** Across held-out generators and infrared domains, a class-conditional,
+sensor-aware radiometric diagnostic predicts the downstream change in detection AP better than
+perceptual metrics (FID / LPIPS / SSIM) and recent detection-data metrics (SDQM / CCDM). This is
+a hypothesis to test, not an assumed property of RFS.
 
 ---
 
@@ -20,6 +21,7 @@ generated IR data helps a detector. **Radiometric consistency does.**
 
 - [Why this repository exists](#why-this-repository-exists)
 - [Phases](#phases) — the implementation plan, phase by phase
+- [Current GO / NO-GO gate](#current-go--no-go-gate)
 - [Moving this repository to a GPU machine](#moving-this-repository-to-a-gpu-machine)
 - [Compute budget](#compute-budget)
 - [The pipeline](#the-pipeline)
@@ -38,16 +40,12 @@ atmosphere) and by time (flight hours, range slots). Every operational IR detect
 therefore falls back on simulated or generated imagery, and every one of them runs into the
 same question — *can this data be trusted for training, and under what conditions?*
 
-The published answers do not agree. Controlled mixing studies report that adding synthetic
-data *helps*, with a non-monotonic optimum. Thermal-specific work reports that synthetic
-training data sits slightly *below* real data in-domain and *above* it on an unseen domain —
-the sign of the effect changes with the evaluation setting alone. Practitioner reports of
-generated IR degrading detection are common and, in the cases that are documented, share a
-set of experimental conditions that would bias the result negative.
-
-Nobody has controlled those conditions and measured which one is responsible. That is what
-this repository does. See [`docs/references.md`](docs/references.md) for the specific
-positions and what each one measured.
+Published downstream effects vary with the dataset, task and protocol. Recent detection-specific
+metrics and task-oriented IR generation also make the broad version of this question occupied
+territory. What remains unresolved is whether sensor-aware radiometric statistics add predictive
+value across held-out generators and infrared domains while the training protocol is controlled.
+That narrower question is what this repository tests. See
+[`docs/references.md`](docs/references.md) for the specific positions and measurements.
 
 ---
 
@@ -55,16 +53,16 @@ positions and what each one measured.
 
 Each phase states what to implement, how to run it, and **the condition that must hold before
 moving on**. The exit criteria are not formalities: Phase 1 in particular gates everything
-after it, because a result that cannot be reproduced cannot be reinterpreted.
+after it, because an unqualified baseline cannot support later interpretation.
 
 | Phase | Goal | State | Runs |
 |---|---|---|---|
-| [0](#phase-0--scaffold-and-instrumentation) | Scaffold, sensor chain, RFS diagnostic | **done** | 0 |
-| [1](#phase-1--data-layer-and-the-e1-reproduction) | Data layer, detector, **three-arm reproduction** | next | 42 |
-| [2](#phase-2--the-controlled-experiment-f1-f3) | Pretraining and budget ablations — **the sign-flip test** | | 108 |
+| [0](#phase-0--scaffold-and-instrumentation) | Scaffold, sensor chain, RFS diagnostic | **CPU and RTX 4090 CUDA pilots passed** | 1 data-free pilot |
+| [1](#phase-1--data-layer-and-the-e1-protocol-transfer) | Data layer, detector, **three-arm protocol transfer** | Full-data timing passed; clean-snapshot baseline next | 39 screening |
+| [2](#phase-2--the-controlled-experiment-f1-f3) | Pretraining and budget ablations — **the sign-flip test** | | 87 screening |
 | [3](#phase-3--label-audit-and-failure-mode-decomposition-f4-f5) | Label audit, stratified analysis | | 0 |
-| [4](#phase-4--rfs-predictive-power-n1) | Curation policies, **RFS vs FID predictive power** | | 30 |
-| [5](#phase-5--small-target-regime-and-sensor-matching) | Small-target regime with a real coverage gap | | 36 |
+| [4](#phase-4--rfs-predictive-power-n1) | Curation, **RFS vs task-aware metric predictive power** | | 30 screening + confirmation |
+| [5](#phase-5--small-target-external-validation-and-sensor-matching) | Sequence-disjoint small-target external validation | Anti-UAV300 audited; 410/adapters pending | 30 screening + confirmation |
 | [6](#phase-6--sensor-in-the-loop-generation-n2) | Differentiable sensor in the generation loop | | ~20 |
 | [7](#phase-7--deployment-track) | ONNX / INT8 / latency-vs-mAP | | 0 |
 | [8](#phase-8--radiometrically-consistent-3d-generation-n3) | 3D multi-view IR generation | | TBD |
@@ -78,59 +76,164 @@ real-only could be a gain any crude simulation would also produce, and a loss co
 any non-real imagery would produce. **The generative model is only interesting to the extent
 it beats the free option.**
 
+### Current GO / NO-GO gate
+
+As of 2026-09-05:
+
+- **GO:** `make smoke` passes with 73 tests. The data-free pilot separated faithful RFS (0.542)
+  from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
+  back-propagated a finite gradient through the sensor chain on CPU and CUDA. On an NVIDIA
+  GeForce RTX 4090 with `torch==2.9.0+cu128`, the 10-iteration CUDA fixture measured 1.158 ms
+  per forward/backward iteration and 43.4 MiB peak allocated CUDA memory. This micro-pilot
+  validates execution and differentiability; it is not a detector-training runtime estimate.
+- **GO:** the local FLIR v2 audit found 10,742/1,144/3,749 thermal train/val/test images, a
+  corresponding 16-bit TIFF for every image, zero invalid boxes or missing annotation targets,
+  no video-id overlap among splits, and 3,749 valid time-synchronised video pairs. The 32-image
+  16-bit RFS run completed; its small pooled sample is diagnostic only. One RGB-train JPEG is
+  absent from COCO and is excluded as an orphan rather than silently entering a run.
+- **GO:** the FLIR train/validation detector inputs are frozen in a content-addressed manifest
+  (`1a730bf3...c638b0`), with the six declared classes mapped explicitly. A deterministic
+  512-image, train-only histogram fit freezes the analytics16 network window at 6076-8097 DN
+  (`3763f8e6...e19184`). The lazy registry loader, filtered COCO export, COCO evaluator and
+  pinned YOLOX 0.3.0 CPU model/data preflight pass. Deterministic 128/64-image train/validation
+  subsets are engineering-smoke inputs only and must never be reported as an experiment result.
+- **GO (engineering only):** the one-epoch, real-only YOLOX-s GPU smoke completed on `node39`
+  with batch 8 and FP16. It trained all 16 iterations, wrote three checkpoints, and completed
+  validation in 122.981 seconds wall time. The logged CUDA allocation was 1,812 MiB; at the
+  last reported training iteration the total loss was 17.4, and evaluation measured 38.14 ms
+  forward plus 4.44 ms NMS. The content-addressed smoke record is
+  `experiments/flir_yolox_smoke_result.json` (`be11b7a1...7e9f1b9`). Its best AP of 0.00 after
+  one scratch epoch on 128 images is expected and is **not** a scientific result.
+- **GO (engineering only):** the batch-8 x 8-step accumulation smoke also passed on `node39`.
+  It executed 16 microbatches as exactly two effective-batch-64 optimiser steps, kept losses
+  finite, completed validation, and recorded 1,812 MiB allocated CUDA memory. Its successful
+  attempt took 46.909 seconds, but its asynchronous per-iteration log is not a valid throughput
+  benchmark. The content-addressed record is `experiments/flir_yolox_accum_smoke_result.json`
+  (`fe652608...c849237`); its 128/64-image subsets and AP remain engineering evidence only.
+- **GO (runner):** the verified FLIR runner now freezes full train/validation input
+  hashes, code hashes, resolved configuration and environment; rejects subset annotations for a
+  formal run; writes isolated replayable manifests; and persists predictions plus the complete
+  COCO AP/AR and per-class metric set. Its bounded timing mode retains the normal 300-epoch
+  augmentation state, synchronises CUDA around measured iterations, excludes warm-up, and skips
+  checkpoints/evaluation. Formal training-spec preparation now refuses a dirty Git checkout.
+- **GO (full-data timing):** the selected batch-32 x 2-step accumulation policy ran 160
+  microbatches as 80 optimiser steps over the full FLIR loader, visited six multiscale input
+  sizes, retained mosaic/mixup and kept every loss finite. It used 9,827 MiB peak allocated CUDA
+  memory and measured 19.21 images/s including one-time cold starts for previously unseen input
+  sizes. Reusing 672 px returned to about 0.20 seconds per microbatch. The verified manifest is
+  `experiments/yolox_runs/flir_real_only_timing_b32_a2_w8_seed0_v1/run_manifest.json`
+  (`91da0e27...601f0ac`). This engineering run truthfully records the then-dirty predecessor; it
+  must not be rewritten as a clean run.
+- **RECORD:** the local mirror archive contains 11,886 thermal still images, whereas FLIR's page
+  and bundled README state 9,711. The internally consistent local release may be used only under
+  its recorded archive hash and counts; comparisons must not call it an unspecified "FLIR v2".
+- **GO:** the Anti-UAV300 archive passes CRC and layout checks under its recorded SHA-256. The
+  extracted 160/67/91 train/validation/test sequences exactly match the mutually disjoint
+  supplied manifests. All 636 paired videos open at 20 FPS; label, visible-video and IR-video
+  frame counts agree. The train-only 48-sequence RFS diagnostic completed without reading
+  validation/test samples (reference 1.114; internal holdout 1.095).
+- **HOLD:** Anti-UAV300 annotation and registration use. Across both modalities, 445 frames are
+  marked present but have zero-area boxes (294 IR, 151 visible); adapters must exclude and count
+  them. Visible video is 1920x1080, IR is 640x512, modality-presence labels disagree on 14,547
+  paired frames, and normalised box-centre residual p95 is 0.160-0.181 by split. Direct visible
+  box reuse in IR is invalid until a calibrated transform and residual threshold are frozen.
+  `test-dev` duplicates 100 training sequences and is not an independent evaluation split.
+- **HOLD:** reportable detector training. Engineering smokes and full-data timing passed, but the
+  real-only 300-epoch baseline must be prepared from the clean committed snapshot, populate the
+  complete COCO metric set, and replay successfully. Generated arms also require an audited
+  paired source manifest and generator checkpoints.
+- **GO for Phase 1 only after:** an immutable pair manifest is produced; RGB/thermal registration
+  is audited; all train/validation/test splits are disjoint by scene or video sequence; DiffV2IR
+  and PID checkpoints pass a fixed inference fixture; one detector arm completes end to end and
+  can be replayed from its manifest; and a one-cell timing pilot replaces estimated runtimes.
+- **NO-GO for the full grid until:** pilot variance determines the number of confirmatory seeds
+  and the RFS decision rule and grouped cross-validation protocol are frozen. Grid expansion now
+  de-duplicates identical zero-generated controls across generator, budget and sensor factors.
+
+This gate distinguishes a runnable scaffold from a result that can support a scientific claim.
+
 ---
 
 ### Phase 0 — scaffold and instrumentation
 
-**Done.** Present in this repository and covered by tests.
+**CPU and CUDA pilots passed.** The core is present and covered by tests. Phase 0 is an
+engineering and metric sanity gate; it does not establish the research hypothesis.
+Class-conditioned RFS aggregation and a frozen undefined-statistic policy remain Phase 1 gates.
 
 | Component | File | Status |
 |---|---|---|
 | Differentiable IR sensor chain (MTF, NETD, FPN/NUC, AGC + 8-bit) | `src/aero_ir/sensor/` | implemented, differentiability tested |
-| Radiometric Fidelity Score R1–R8 | `src/aero_ir/rfs/stats.py` | implemented, behaviour tested |
+| Radiometric Fidelity Score R1–R8 | `src/aero_ir/rfs/stats.py` | pooled diagnostic implemented; class conditioning pending |
 | Distributional distances + real-set sampling floor | `src/aero_ir/rfs/distances.py`, `report.py` | implemented |
 | Mixing budget semantics (`fixed_total` vs `additive`) | `src/aero_ir/data/mixing.py` | implemented, tested |
 | Experiment grid E1–E5 as configuration | `configs/experiment/` | declared |
 | Protocol, RFS spec, roadmap | `docs/` | written |
+| FLIR audit, immutable detector manifest and loader | `src/aero_ir/data/flir.py`, `data/registry.py` | implemented; local release passed |
+| Train-only analytics16 detector preprocessing | `src/aero_ir/data/preprocess.py` | implemented; 6076-8097 DN window frozen |
+| Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | CPU suite, both GPU smokes and full-data timing passed; clean-snapshot baseline pending |
+| Anti-UAV300 archive/video/annotation audit | `src/aero_ir/data/antiuav.py`, `scripts/audit_antiuav300.py` | implemented; archive, extraction and timing passed; annotation/registration holds recorded |
 
-**Exit criterion.** `make smoke` passes on the target machine. This needs neither GPU nor
-data, so it is the first thing to run after transfer.
+**Exit criterion met.** `make smoke` passes, and the Phase 0 pilot passes on the intended RTX
+4090 compute device. The smoke test needs neither GPU nor data; the pilot times a sensor-chain
+forward/backward pass and checks that RFS separates faithful, degraded and polarity-inverted
+fixtures. The recorded CUDA result has finite gradients and includes timing and peak-memory data.
 
 ---
 
-### Phase 1 — data layer and the E1 reproduction
+### Phase 1 — data layer and the E1 protocol transfer
 
-**The gate.** If the reported negative result cannot be reproduced under its original
-conditions, no later experiment is interpretable — a changed outcome could be the change in
-conditions or could be a difference in the setup. Do not proceed past this phase on a partial
-reproduction.
+**The gate.** E1 transfers the fixed-total mixing design of `vanherle2022` to infrared detection;
+it is **not** an exact reproduction. The source study used DIMO, Mask R-CNN/ResNet-101 and its own
+training recipe, whereas E1 uses FLIR and YOLOX-s. An exact reproduction must use the authors'
+DIMO code and data and be reported separately. E1's purpose is to qualify this repository's IR
+baseline and establish the three-arm curve under a fully recorded protocol.
 
 **Implement**
 
 | File | What |
 |---|---|
-| `src/aero_ir/data/registry.py` | FLIR ADAS v2 loader, **thermal and the aligned visible split** — the visible images are the input the simulated and generated arms both render from. Contract: images as float (H, W) in a consistent intensity unit; boxes `(x, y, w, h)` COCO; metadata carrying the key named by `data.held_out_scenario.key` |
-| `src/aero_ir/detect/yolox_adapter.py` | `fit()` / `predict()` around the upstream trainer. Augmentation is fixed across arms by protocol |
-| `src/aero_ir/detect/evaluate.py` | `coco_metrics()`; `delta_ap()` is already implemented |
+| `src/aero_ir/data/flir.py` | COCO/T-linear audit, content-addressed detector manifest and lazy analytics16 loader are implemented. The remaining paired-generation manifest must not pair still images by COCO id: counts differ, while only the video subset has an official pair map. Record registration residuals, scene/video id and split provenance |
+| `src/aero_ir/data/registry.py` | the FLIR loader is connected to the configured lazy dataset interface; images are `(H, W)` uint16 DN arrays and boxes use COCO `(x, y, w, h)` |
+| `src/aero_ir/detect/yolox_adapter.py` | the pinned backend and manifest-aware upstream experiment pass CPU and both GPU engineering checks; effective-batch accumulation is implemented and tested |
+| `src/aero_ir/detect/evaluate.py`, `yolox_evaluator.py` | complete COCO AP/AR and per-class metrics are implemented, fixture-tested and wired to formal training |
+| `src/aero_ir/detect/yolox_run.py`, `scripts/run_flir_yolox.py` | content-addressed prepare/execute/finalise lifecycle, isolated replay and bounded synchronized timing are implemented and timing-tested; formal specs require clean Git |
 | `src/aero_ir/cli.py` | dispatch for `run` |
 | `scripts/run_grid.py` | replace the `pass` with a launcher call |
 
 **Run**
 
 ```bash
-export AERO_DATA_ROOT=/path/to/data
-bash scripts/download_flir.sh          # prints access route, verifies layout
+export AERO_DATA_ROOT=/path/to/extracted
+export AERO_FLIR_ROOT="$AERO_DATA_ROOT/FLIR_ADAS_v2"
+# optional but required for a publication manifest:
+export AERO_FLIR_ARCHIVE=/path/to/downloaded-release.zip
+bash scripts/download_flir.sh          # verifies the official directory layout
+make audit-flir                        # writes experiments/flir_data_audit.json
+make manifest-flir                     # writes experiments/flir_trainval_manifest.json
+make preprocess-flir                   # writes experiments/flir_preprocess.json
+make prepare-flir-yolox                # writes filtered COCO views; uses no GPU
+make pilot-flir-rfs                    # writes experiments/flir_rfs_pilot.json
 python scripts/run_grid.py e1_reproduce --dry-run
+# The two engineering-subset GPU smokes have passed. Preserve their records:
+make record-flir-yolox-smoke \
+  RUN_DIR=experiments/yolox_runs/flir_real_only_smoke_seed0
+# Full-data timing passed with batch 32 x accumulation 2 and eight workers.
+# Prepare the baseline only from a clean committed checkout; preparation refuses dirty Git:
+.venv/bin/python scripts/run_flir_yolox.py prepare \
+  --mode train --run-id flir_real_only_full_seed0_v1 \
+  --root "$AERO_FLIR_ROOT" --batch-size 32 \
+  --gradient-accumulation-steps 2 --effective-batch-size 64 --workers 8
+# after every HOLD gate above is cleared:
 make e1
 ```
 
-**Exit criterion.** The trend reported by the published baseline named in
-[`docs/references.md`](docs/references.md) is recovered within its stated tolerance, across
-3 seeds. Fill in that file before starting: **E1 reproduces a citable public result, not an
-impression.** Record the reproduced curve — it is Figure 1's baseline and the thing every
-later result is measured against.
+**Exit criterion.** First, a real-only YOLOX-s arm must complete, produce plausible COCO metrics,
+and replay from its manifest. Then run the three-arm screening grid with matched seeds. Record the
+curve as an IR protocol-transfer result; do not require it to copy the shape of a different model
+and domain. Three seeds are for screening only and do not support a confidence-interval claim.
 
-**Compute.** 2 generators x 7 ratios x 3 seeds = **42 runs**, YOLOX-s from scratch
+**Compute.** The Cartesian grid has 42 cells; collapsing the duplicated real-only generator
+controls leaves **39 runs**, YOLOX-s from scratch
 (300 epochs — the expensive phase, by construction, since scratch training is the condition
 being tested).
 
@@ -157,21 +260,24 @@ make e2     # train: [scratch, pretrained] x gen_ratio x seed   -> the sign-flip
 make e3     # budget_mode: [fixed_total, additive] x gen_ratio x seed
 ```
 
-**Exit criterion.** A decision, with a bootstrap CI over seeds, on:
+**Exit criterion.** Screen both questions with three matched seeds, then power and run the
+preregistered confirmatory contrasts before attaching a bootstrap confidence interval:
 
-1. **Does the sign of `dAP` change with initialisation alone?** If yes, the headline result is
-   in hand: the reported negative finding is an artifact of scratch training.
+1. **Does the sign of `dAP` change with initialisation alone?** E2 locks epochs, batch semantics,
+   optimiser, learning rate, warm-up and augmentation across the two arms; only initial weights
+   differ. A separate recipe ablation is required before attributing any effect to training length.
 2. **Does `fixed_total` differ from `additive`?** These answer different questions —
    *substituting* generated for real data versus *adding* it. Reporting them separately is
    what separates "generated data harms" from "having less real data harms".
 
-A null result here is still a result, and a publishable one: it would establish that the
-negative finding is robust to the two conditions most likely to explain it, which no
-published work currently shows. Do not treat a null as a failed phase.
+A null result here is still a result. Its scope is this detector, generator and domain; it does
+not establish field-wide robustness without held-out-generator and held-out-domain confirmation.
 
-**Compute.** E2: 2 inits x 4 ratios x 3 seeds = 24 runs. E3: 2 generators x 2 budget modes
-x 7 ratios x 3 seeds = 84 runs. **108 runs.** E3 uses pretrained initialisation (100 epochs),
-so it is roughly a third the cost per run of E1.
+**Compute.** E2: 2 inits x 4 ratios x 3 screening seeds = 24 runs. E3's Cartesian grid has
+72 cells. Additive mixing excludes ratio 1.0 because a 100% generated fraction is undefined when
+the real count is held constant. Collapsing nine duplicate zero-generated E3 cells leaves
+**87 screening runs** across E2 and E3, followed only by powered confirmation of preregistered
+contrasts.
 
 ---
 
@@ -206,7 +312,7 @@ measurable; this phase asks whether it can be *predicted* — and therefore cont
 | File | What |
 |---|---|
 | `src/aero_ir/curate/selectors.py` | `RFSSelector` (per-sample RFS, `closest` and `coverage` modes), `PerceptualSelector` (per-sample distance to the real feature centroid), `MarginalAPSelector` (gradient-alignment proxy) |
-| `src/aero_ir/analysis/predictive_power.py` | regress `dAP` on FID / LPIPS / SSIM / RFS scalar / RFS vector; Spearman and cross-validated R² |
+| `src/aero_ir/analysis/predictive_power.py` | compare FID / LPIPS / SSIM / SDQM / CCDM / RFS scalar / RFS vector; Spearman and cross-validated R², with folds grouped by generated pool and leave-one-generator/domain-out tests |
 
 **Run**
 
@@ -216,42 +322,61 @@ make e4     # curation: [none, random, fid_topk, rfs_topk, marginal_ap] x ratio 
 
 **Exit criterion.** A single table: predictive power of each fidelity measure for `dAP`.
 
-- **H1** holds if FID and LPIPS have low predictive power.
-- **H2** holds if the RFS scalar and vector beat them.
+- **H1** holds only if a preregistered interval shows FID and LPIPS below a stated predictive
+  threshold on held-out groups.
+- **H2** holds only if RFS improves held-out predictive performance over both perceptual and
+  recent detection-specific metrics, with uncertainty reported.
 - **H4** holds if `rfs_topk` beats `random` and `fid_topk` at an equal budget.
 
-If RFS loses to FID, say so plainly and report it. An honest negative on the central
-hypothesis is worth more than a hedged positive, and it still answers a question nobody has
-answered.
+Randomly splitting run rows is prohibited: seeds sharing the same generated pool are not
+independent data points. If RFS loses, say so plainly. Results confined to FLIR or one generator
+must be described as domain-specific, not as a general training-data metric.
 
 **Compute.** 5 policies x 2 ratios x 3 seeds = **30 runs**, pretrained.
 
 ---
 
-### Phase 5 — small-target regime and sensor matching
+### Phase 5 — small-target external validation and sensor matching
 
-The regime operational IR detection actually lives in, and the first configuration where
-generated data has a genuine coverage gap to fill rather than existing scenes to restyle.
+Anti-UAV410 is an IR-only tracking benchmark, not a paired RGB/IR detection training set. It may
+be adapted to frame-level detection only with sequence-disjoint sampling and explicit visibility
+handling; it cannot directly provide RGB inputs for a visible-to-IR generator. Use Anti-UAV300's
+paired training sequences for generator development and Anti-UAV410 only as external thermal
+evaluation. No validation/test frame, label or paired visible image may enter generation or
+training. A genuine non-acquirable-scenario coverage claim is deferred to Phase 8 unless an
+independent source of those scenarios is specified.
+
+The local Anti-UAV300 release is usable for a filtered training-only pilot, not yet for detector
+training. Its official split manifests are sequence-disjoint and temporally paired, but zero-area
+present boxes must be excluded and RGB-to-IR coordinate transfer remains unqualified. The
+display-referred 8-bit MP4 stream is also not a substitute for radiometric DN data.
 
 **Implement**
 
 | File | What |
 |---|---|
-| `src/aero_ir/data/registry.py` | Anti-UAV410 loader; `target_pixel_area_bin` metadata for the held-out slice |
+| `src/aero_ir/data/antiuav.py` | archive, split, annotation and paired-video audit plus deterministic train-only IR sampling are implemented; detector adapter remains pending |
+| `src/aero_ir/data/registry.py` | Anti-UAV300 paired-source loader and Anti-UAV410 tracking-to-detection evaluation adapter; `sequence_id`, visibility and `target_pixel_area_bin` metadata |
 | `src/aero_ir/sensor/fit.py` | `fit_sensor_params()` — NETD from the noise PSD floor (R5), MTF cutoff from the spectrum roll-off (R4), column FPN from the variance ratio (R8), AGC clip points from the histogram (R7) |
 
 **Run**
 
 ```bash
+export AERO_ANTIUAV300_ROOT=/path/to/Anti-UAV300
+export AERO_ANTIUAV300_ARCHIVE="$AERO_ANTIUAV300_ROOT/Anti-UAV300.zip"  # recommended
 bash scripts/download_antiuav.sh
+make audit-antiuav300       # writes experiments/antiuav300_data_audit.json
+make pilot-antiuav300-rfs   # train-only; writes experiments/antiuav300_rfs_pilot.json
+# after Anti-UAV410 and the detector/evaluation adapters are ready:
 make e5     # gen_ratio x sensor: [none, eo_ir_default, matched] x seed
 ```
 
-**Exit criterion.** Is `dAP > 0` in the held-out scenario slice, and does the fitted sensor
-model beat both the generic profile and no sensor model at all? This is the cell that decides
-whether the whole thesis generalises past the driving/urban domain.
+**Exit criterion.** On sequence-disjoint external data, is `dAP > 0`, and does the fitted sensor
+model beat both the generic profile and no sensor model? This tests transfer beyond the urban
+domain; it does not by itself prove benefit in unobserved operational scenarios.
 
-**Compute.** 4 x 3 x 3 = **36 runs**.
+**Compute.** The Cartesian grid has 36 cells; collapsing six duplicate zero-generated sensor
+controls leaves **30 runs**.
 
 ---
 
@@ -357,8 +482,8 @@ rsync -av --exclude '.git' --exclude 'data' --exclude 'experiments' \
 python3 -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip
 
-# install torch first, matched to the host CUDA version
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# install torch + torchvision first using the command generated for the host by
+# https://pytorch.org/get-started/locally/ ; do not copy a stale CUDA wheel URL
 
 pip install -e ".[torch,track,detect,deploy,dev]"
 pre-commit install
@@ -367,37 +492,84 @@ pre-commit install
 `torch` is an optional extra rather than a hard dependency precisely so the analysis and RFS
 code stay installable on a machine without CUDA.
 
+For the RTX 4090 check on this checkout, an isolated environment was created as follows (the
+directory is ignored by Git):
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install torch==2.9.0 \
+  --index-url https://download.pytorch.org/whl/cu128
+.venv/bin/python -m pip install -e ".[dev,detect]"
+make smoke PY=.venv/bin/python
+```
+
+The environment passes the full CPU smoke suite and the CUDA Phase 0 pilot on a healthy RTX 4090.
+An initially tested GPU host returned error 999 from both the vendor `deviceQuery` binary and
+PyTorch, even with CUDA library overrides removed; moving the same environment to a healthy GPU
+cleared the error. That failure was host-level rather than a repository or virtual-environment
+failure.
+
 ### 3. Verify the transfer — before touching data or GPUs
 
 ```bash
 make smoke
 ```
 
-Runs the full test suite plus an RFS end-to-end check on synthetic scenes. On a correct
+Runs lint, formatting, the full available test suite, and an RFS end-to-end check on synthetic
+scenes. Sensor tests require PyTorch but not a GPU. On a correct
 transfer a radiometrically degraded set scores far from the real set and the report names
 the components that failed. If this passes, the code arrived intact.
 
 ### 4. Data
 
 ```bash
-export AERO_DATA_ROOT=/mnt/data/aero        # put this in your shell profile
-bash scripts/download_flir.sh               # prints the access route, verifies layout
+export AERO_DATA_ROOT=/mnt/data/flir-release/extracted
+export AERO_FLIR_ROOT="$AERO_DATA_ROOT/FLIR_ADAS_v2"
+bash scripts/download_flir.sh               # verifies the official directory layout
+make audit-flir
+make pilot-flir-rfs
+
+export AERO_ANTIUAV300_ROOT=/mnt/data/Anti-UAV300
+export AERO_ANTIUAV300_ARCHIVE="$AERO_ANTIUAV300_ROOT/Anti-UAV300.zip"
+bash scripts/download_antiuav.sh
+make audit-antiuav300
+make pilot-antiuav300-rfs
 ```
 
 Datasets are gated and are never fetched automatically. The scripts verify layout and record
 checksums after manual placement.
 
-### 5. Multi-GPU
+### 5. Execution model
 
-The workload is many small runs, not one large one. **One run per GPU beats data-parallel
-across GPUs here** — a 153-run grid finishes far sooner with 8 independent runs in flight
-than with 8-way DDP on one run at a time, and it keeps seeds cleanly separated.
+The available target is one RTX 4090 with 24 GB. The official YOLOX recipe recommends a global
+batch of 64 across eight GPUs (eight images per GPU); do not assume batch 64 fits on one card.
+The adapter exposes per-device batch size and gradient accumulation explicitly and preserves the
+effective batch and learning-rate semantics across arms. The first end-to-end detector smoke used
+batch 8 and FP16 before accumulation was enabled. It completed the 128-image training subset and
+64-image validation subset in 122.981 seconds, logged 1,812 MiB CUDA allocation, and wrote valid
+checkpoints. The later batch-8 x 8-step accumulation smoke completed in 46.909 seconds with two
+optimiser steps. Neither tiny-subset wall time nor YOLOX's asynchronous iteration log is a valid
+full-data runtime estimate. The bounded timing runner therefore uses the full training split and
+normal mosaic/mixup/multiscale state, synchronises CUDA, excludes warm-up and records throughput,
+loss finiteness, input sizes, peak memory, software and hardware in a replayable manifest. Its
+batch-32 x 2-step, eight-worker run completed 160 microbatches across six sizes at 19.21 images/s
+including cold-size startup, with 9,827 MiB peak allocation. Novel sizes incurred roughly
+43-second one-time CUDA/cuDNN initialization stalls; a repeated 672-pixel block averaged about
+0.20 seconds per microbatch. Batch 32 therefore has ample memory headroom and is the frozen
+single-GPU microbatch policy; raw short-pilot throughput remains a conservative runtime estimate.
+
+On this checkout on 2026-09-05, the Phase 0 CUDA fixture passed on an RTX 4090 with
+`torch==2.9.0+cu128`: 1.158 ms mean forward/backward time over 10 measured iterations and
+43.4 MiB peak allocated memory for an `[8, 1, 256, 320]` input. These values qualify the sensor
+fixture only. The full-data timing result above, rather than the sensor fixture, governs detector
+runtime and memory planning.
 
 ```bash
-# shard a grid across 8 GPUs
-python scripts/run_grid.py e3_mixing_ratio --dry-run > /tmp/e3.txt
-awk 'NR % 8 == 0' /tmp/e3.txt | while read -r cmd; do CUDA_VISIBLE_DEVICES=0 $cmd; done &
-# ... one such loop per device, or use a job launcher / hydra multirun
+# inspect the grid; this does not launch jobs
+python scripts/run_grid.py e3_mixing_ratio --dry-run
+
+# full-data timing passed; grid launch remains disabled until a clean-snapshot baseline manifest
+# has completed and replayed successfully
 ```
 
 Set `tracking.wandb.mode=offline` on a host without outbound network and sync later with
@@ -407,22 +579,25 @@ Set `tracking.wandb.mode=offline` on a host without outbound network and sync la
 
 ## Compute budget
 
-Order-of-magnitude planning figures for YOLOX-s on a single 48 GB card. **Measure one run
-before trusting the totals** — the numbers below exist to size the grid, not to promise a
-schedule.
+Only the Phase 1 row now has an RTX 4090 measurement: its conservative projection applies the
+19.21 images/s cold-start-inclusive pilot throughput to all 300 epochs and therefore likely
+overstates steady-state training time. Other rows remain placeholders until their own pilots.
+Before approving the grid, also benchmark generator inference and record checkpoint size and
+total wall time. Counts below are raw Cartesian cells: identical zero-generated controls must be
+scheduled once and referenced by the other cells rather than retrained.
 
-| Phase | Runs | Init | Epochs | Rough per-run | Wall-clock on 8 GPUs |
-|---|---|---|---|---|---|
-| 1 (E1) | 42 | scratch | 300 | ~2 h | ~11 h |
-| 2 (E2) | 24 | mixed | 300 / 100 | ~1.3 h | ~4 h |
-| 2 (E3) | 84 | pretrained | 100 | ~0.7 h | ~8 h |
-| 4 (E4) | 30 | pretrained | 100 | ~0.7 h | ~3 h |
-| 5 (E5) | 36 | pretrained | 100 | ~0.7 h | ~3 h |
-| **core total** | **216** | | | | **~29 h** |
-| E6 (optional) | 36 | pretrained | 100 | ~0.4–1.5 h | ~4 h |
+| Phase | Screening runs | Init | Epochs | RTX 4090 runtime |
+|---|---|---|---|---|
+| 1 (E1) | 42 | scratch | 300 | ~47 h/run conservative pilot projection |
+| 2 (E2) | 24 | mixed, schedule matched | 100 | TBD by pilot |
+| 2 (E3) | 72 | pretrained | 100 | TBD by pilot |
+| 4 (E4) | 30 | pretrained | 100 | TBD by pilot |
+| 5 (E5) | 36 | pretrained | 100 | TBD by pilot |
+| **screening total** | **204** | | | **TBD** |
+| E6 (optional) | 36 | pretrained | 100 | TBD by pilot |
 
-Phases 3, 7 and 9 add no training. Phase 6 is dominated by generator fine-tuning and is
-budgeted separately once Phase 5 reports.
+Confirmatory reruns selected by power analysis are additional. Phases 3, 7 and 9 add no detector
+training. Phase 6 is dominated by generator fine-tuning and is budgeted separately.
 
 **Cut if the budget is tight**, in this order: E6 entirely; then E3's `fixed_total` half
 (keep `additive`, which is the operationally meaningful mode); then E1's ratios 0.6 and 0.8.
@@ -443,7 +618,7 @@ S3  Radiometric Fidelity Score   diagnostic vector, not a scalar:
                                  noise PSD, per-class target SNR, target pixel-area
 S4  Utility-aware curation       select / weight generated samples under a fixed budget
 S5  Controlled training          (pretrained on/off) x (fixed-N / additive) x (mix ratio)
-                                 x (domain) x 3 seeds, with a label-transfer audit
+                                 x (domain) x screening seeds + powered confirmation
 S6  Diagnostics + deployment     failure-mode decomposition; ONNX -> TensorRT INT8;
                                  latency vs mAP trade-off
 ```
@@ -452,12 +627,12 @@ Full design rationale: [`docs/experiment_protocol.md`](docs/experiment_protocol.
 
 ## What the controlled protocol fixes
 
-Reported negative results on generated IR share five design properties that this protocol
-removes. Each one is a factor in the run grid rather than an assumption.
+Prior synthetic-data studies vary across five design properties that can change the result.
+Each one is measured or controlled here rather than treated as an assumption.
 
 | | Common property | Why it invalidates the conclusion | Handled by | Phase |
 |---|---|---|---|---|
-| F1 | Detector trained from random init | Un-pretrained detectors are maximally sensitive to distribution shift; production training never starts from scratch | `train.pretrained` as an explicit factor | 2 |
+| F1 | Detector initialisation differs across studies | Initialisation can interact with distribution shift and training dynamics | `train.pretrained` as an explicit factor while the schedule is fixed | 2 |
 | F2 | Generated data derived from the *same scenes* as the real data | Adds noise without adding coverage — the entire point of synthetic data is untested | `data.coverage_split` | 5 |
 | F3 | Mixing ratio confounded with total dataset size | A ratio increase may mean less real data *or* more total data; the two imply opposite conclusions | `mixing.budget_mode` | 2 |
 | F4 | Labels transferred across the generation step, unaudited | If generation deforms object boundaries, label noise enters silently | `data.labels.audit` | 3 |
@@ -470,8 +645,8 @@ docs/                     problem statement, experiment protocol, RFS spec, data
 configs/                  Hydra tree - every experiment declared here, none in scripts
   experiment/             E1-E5, each with its sweep and success criterion
 src/aero_ir/
-  sensor/                 differentiable IR sensor chain          [Phase 0 done]
-  rfs/                    radiometric fidelity diagnostic R1-R8   [Phase 0 done]
+  sensor/                 differentiable IR sensor chain          [Phase 0 pilot ready]
+  rfs/                    radiometric diagnostic R1-R8            [class conditioning pending]
   data/                   loaders, mixing budget, label audit     [mixing done]
   generate/               generator adapters behind one Protocol
   curate/                 selection policies
@@ -480,7 +655,7 @@ src/aero_ir/
   deploy/                 ONNX / INT8 / latency
   scene3d/                N3 scaffold + plan.md
 scripts/                  dataset access, grid expansion, report, run verification
-tests/                    15 tests; no GPU or dataset required
+tests/                    73 tests; no GPU or dataset required
 ```
 
 ## Mapping to industry requirements
@@ -503,9 +678,9 @@ Public datasets only. No proprietary imagery, labels, or specifications are used
 
 | Dataset | Role | Phase |
 |---|---|---|
-| Teledyne FLIR ADAS Thermal v2 | reproduction anchor — the driving/urban regime | 1 |
+| Teledyne FLIR ADAS Thermal v2 | IR protocol-transfer anchor; pair manifest required | 1 |
 | LLVIP | aligned low-light visible-IR pairs | optional |
-| Anti-UAV410 / CST Anti-UAV | small, low-contrast target regime | 5 |
+| Anti-UAV300 / Anti-UAV410 | audited paired development / IR-only external evaluation (pending) | 5 |
 | DroneVehicle | aerial viewpoint, oriented boxes | optional |
 
 See [`docs/datasets.md`](docs/datasets.md) for licences and access.
@@ -519,22 +694,29 @@ rather than merely asserted.
   what previous work found is not made in this repository without a reference beside it.
 - **Data** is public and gated only by the providers' own request forms. See
   [`docs/datasets.md`](docs/datasets.md).
-- **Baselines** — YOLOX and the generator checkpoints — are public releases. Training
-  hyperparameters follow the upstream YOLOX defaults (300 epochs, batch 64) so that the
-  reproduction arm is a documented public recipe rather than a borrowed configuration.
+- **Baselines** — YOLOX, DiffV2IR and PID have public code/checkpoint routes. Exact revisions and
+  artifact hashes must be pinned in every run. E1 starts from the documented YOLOX 300-epoch
+  scratch recipe but is an IR protocol transfer, not a reproduction of the DIMO experiment.
 - **No proprietary material** of any kind: no imagery, labels, sensor specifications,
   requirement documents, internal results, or organisation names. This is enforced by
   `.gitignore` and stated as the first rule in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Reproducibility
 
-Every run records: config hash, git SHA, dataset checksum, seed, environment lock, and the
-full metric set. `make verify RUN=<id>` re-executes a run and diffs its metrics. A run that
-does not reproduce within tolerance is marked and excluded from reported aggregates.
+The FLIR YOLOX runner implements the reproducibility contract: preparation freezes the config,
+git SHA and dirty state, full-split and preprocessing checksums, code hashes, seed and execution
+environment; finalisation adds hardware, runtime, predictions and the complete metric set. Replay
+uses a temporary output root so it cannot overwrite the recorded run. Generated-data runs must
+also bind their pair manifest and generator checkpoint before they are reportable. `make verify
+RUN=<manifest.json>` checks artifact integrity, and `make replay RUN=<manifest.json>` re-executes a
+trusted local manifest and compares its deterministic metrics within the declared tolerance.
 
-The claims here concern effect signs of a few AP points. Without seed control and a reported
-spread, an effect that size is indistinguishable from run-to-run noise — which is why every
-cell in every grid is three seeds and every headline number carries a bootstrap interval.
+The claims concern effect signs of a few AP points. Use matched seeds and bootstrap the paired
+per-seed differences. Three seeds are screening evidence only. Run a pilot to estimate variance,
+perform power analysis for the smallest effect of interest, and use at least ten matched seeds
+for any percentile-bootstrap headline contrast; recent methodological work shows small-sample
+bootstrap tests can substantially understate false positives. Predictive-power cross-validation
+must be grouped by generated pool and include held-out-generator/domain evaluation.
 
 ## Licence
 

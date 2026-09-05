@@ -104,7 +104,7 @@ class SyntheticBaselineGenerator:
 
     def generate(self, sources, labels, **kwargs):
         images, provenance = [], []
-        for i, (rgb, ann) in enumerate(zip(sources, labels, strict=False)):
+        for i, (rgb, ann) in enumerate(zip(sources, labels, strict=True)):
             boxes = ann["boxes"] if isinstance(ann, dict) else ann
             classes = ann.get("labels") if isinstance(ann, dict) else None
             images.append(self.render(rgb, boxes, classes))

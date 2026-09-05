@@ -53,3 +53,20 @@ def test_column_structure_detects_injected_column_noise():
 
 def test_target_pixel_area():
     assert stats.target_pixel_area([(0, 0, 4, 5)])[0] == pytest.approx(20.0)
+
+
+def test_spectral_bins_keep_their_coordinate_identity():
+    class Cfg:
+        components = ["R4", "R5", "R7"]
+        annulus_dilation_px = 8
+        highpass_sigma_px = 1.5
+
+    images_and_boxes = [_scene(seed=seed) for seed in range(4)]
+    values = stats.image_set_statistics(
+        [item[0] for item in images_and_boxes],
+        [item[1] for item in images_and_boxes],
+        Cfg(),
+    )
+    assert values["R4"].shape == (4, 64)
+    assert values["R5"].shape == (4, 32)
+    assert values["R7"].shape == (4, 3)

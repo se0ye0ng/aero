@@ -10,6 +10,32 @@ from aero_ir.rfs.distances import DISTANCES, reference_floor
 from aero_ir.rfs.stats import COMPONENTS, image_set_statistics
 
 
+def _normalised_distance(real: np.ndarray, generated: np.ndarray, distance) -> tuple[float, float]:
+    """Return distance/floor without hiding a mismatch behind a zero real-set floor."""
+
+    if real.ndim == 2:
+        if generated.ndim != 2 or generated.shape[1] != real.shape[1]:
+            return float("nan"), float("nan")
+        pairs = [
+            _normalised_distance(real[:, index], generated[:, index], distance)
+            for index in range(real.shape[1])
+        ]
+        scores = np.asarray([score for score, _ in pairs], dtype=np.float64)
+        floors = np.asarray([floor for _, floor in pairs], dtype=np.float64)
+        score = float("inf") if np.isinf(scores).any() else float(np.nanmean(scores))
+        return score, float(np.nanmean(floors))
+
+    floor = reference_floor(real, distance)
+    raw = distance(generated, real)
+    if not np.isfinite(raw) or not np.isfinite(floor):
+        return float("nan"), floor
+    if floor > 0:
+        return float(raw / floor), floor
+    if raw == 0:
+        return 0.0, floor
+    return float("inf"), floor
+
+
 @dataclass
 class RFSReport:
     """Per-component normalised distances plus the weighted scalar.
@@ -56,12 +82,9 @@ def compute_rfs(real_set, gen_set, cfg) -> RFSReport:
     per_component: dict[str, float] = {}
     floors: dict[str, float] = {}
     for key, real_vals in real_stats.items():
-        floor = reference_floor(real_vals, distance)
-        raw = distance(gen_stats.get(key, np.asarray([])), real_vals)
+        score, floor = _normalised_distance(real_vals, gen_stats.get(key, np.asarray([])), distance)
         floors[key] = floor
-        per_component[key] = (
-            float(raw / floor) if floor and np.isfinite(floor) and floor > 0 else float("nan")
-        )
+        per_component[key] = score
 
     weight_cfg = getattr(cfg, "weights", "uniform")
     if weight_cfg == "uniform":
@@ -70,8 +93,13 @@ def compute_rfs(real_set, gen_set, cfg) -> RFSReport:
         total = sum(weight_cfg.values()) or 1.0
         weights = {k: v / total for k, v in weight_cfg.items()}
 
-    finite = [(weights.get(k, 0.0), v) for k, v in per_component.items() if np.isfinite(v)]
-    scalar = float(sum(w * v for w, v in finite) / max(sum(w for w, _ in finite), 1e-12))
+    valid = [(weights.get(k, 0.0), v) for k, v in per_component.items() if not np.isnan(v)]
+    if not valid:
+        scalar = float("nan")
+    elif any(w > 0 and np.isinf(v) for w, v in valid):
+        scalar = float("inf")
+    else:
+        scalar = float(sum(w * v for w, v in valid) / sum(w for w, _ in valid))
 
     return RFSReport(
         per_component=per_component,

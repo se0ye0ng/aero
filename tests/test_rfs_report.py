@@ -60,3 +60,14 @@ def test_identical_distributions_sit_near_the_floor():
     b = _make_set(24, delta=15.0, noise=1.5, seed=11)
     report = compute_rfs(a, b, _Cfg())
     assert report.scalar == pytest.approx(1.0, abs=1.5)
+
+
+def test_zero_floor_does_not_hide_polarity_inversion():
+    class PolarityCfg(_Cfg):
+        components = ["R2"]
+
+    real = _make_set(8, delta=20.0, noise=0.0)
+    inverted = _make_set(8, delta=-20.0, noise=0.0)
+    report = compute_rfs(real, inverted, PolarityCfg())
+    assert np.isinf(report.per_component["R2"])
+    assert np.isinf(report.scalar)

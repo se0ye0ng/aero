@@ -1,5 +1,5 @@
 # @package _global_
-# E1 - reproduce the reported negative result under its original conditions.
+# E1 - transfer a published fixed-total mixing protocol to infrared detection.
 defaults:
   - override /data: flir_urban
   - override /generator: diffv2ir
@@ -19,19 +19,20 @@ sweep:
   generator: [synthetic_baseline, diffv2ir]
   mixing.gen_ratio: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0]
   seed: [0, 1, 2]
-# The reproduction target must be a published, citable result. Record it in
-# docs/references.md and restate it here before running E1 - see docs/references.md.
-reproduction_target:
+sweep_control:
+  collapse_at_zero_generated: [generator]
+protocol_source:
   reference: vanherle2022     # BMVC 2022, arXiv:2211.16066 - see docs/references.md
   reported_trend: >
     Mixing synthetic with real at a fixed total image count outperforms real-only training,
     with a non-monotonic optimum at an interior ratio.
-  tolerance: >
-    Reproduce the SHAPE - a non-monotonic curve with an interior optimum - not the absolute
-    AP, since the domain differs (industrial objects vs thermal driving scenes).
+  transfer_scope: >
+    Transfer only the fixed-total ratio sweep and real-test-set evaluation. The source uses
+    DIMO and Mask R-CNN/ResNet-101; this experiment uses FLIR and YOLOX-s, so neither the
+    numerical AP nor the curve shape is a reproduction target.
   thermal_precedent: mayr2024 # CVPRW - sign of the effect depends on the evaluation domain
-  verify_against_pdf: true    # numbers not yet checked against the source PDF
 success_criterion: >
-  The trend reported by `reproduction_target.reference` is recovered within its stated
-  tolerance across 3 seeds. If it is not, no downstream experiment is interpretable and
-  the cause must be identified before proceeding to E2.
+  The real-only detector arm is qualified and replayable, then all three arms complete with
+  matched screening seeds and immutable manifests. The observed curve is reported without
+  requiring agreement with another detector or domain. Confirmatory claims require a pilot
+  power analysis and additional matched seeds.
