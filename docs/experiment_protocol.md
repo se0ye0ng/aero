@@ -97,4 +97,9 @@ mAP@0.5:0.95/mAP@0.5 of 0.3513/0.5757. Its manifest, predictions, checkpoints an
 metrics verify against commit `fc51f66...775220`. YOLOX's optional L1 regression term was zero
 during mosaic training by design and nonzero from displayed epoch 285, when the final
 no-augmentation phase began. The remaining baseline reproducibility gate is an explicit manifest
-replay; a dirty spec is rejected at protocol review.
+replay; a dirty spec is rejected at protocol review. Separately, the FLIR official map has now
+been frozen as 3,749 `video_test` pairs, but it cannot supply generator training data: shared
+track/category evidence covers only one of eight sequences and has normalised centre-residual
+p95 0.0638 against the frozen 0.02 limit. The three-arm screen therefore remains on hold until a
+training-authorised, sequence-disjoint paired source passes registration and is frozen in its own
+manifest.

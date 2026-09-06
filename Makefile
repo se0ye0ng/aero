@@ -1,4 +1,4 @@
-.PHONY: setup smoke lint test pilot-phase0 audit-flir manifest-flir preprocess-flir prepare-flir-yolox record-flir-yolox-smoke prepare-flir-yolox-timing run-flir-yolox pilot-flir-rfs audit-antiuav300 pilot-antiuav300-rfs data-flir data-antiuav e1 e2 e3 e4 e5 e6 report deploy-bench verify replay clean
+.PHONY: setup smoke lint test pilot-phase0 audit-flir manifest-flir manifest-flir-pairs preprocess-flir prepare-flir-yolox record-flir-yolox-smoke prepare-flir-yolox-timing run-flir-yolox pilot-flir-rfs audit-antiuav300 pilot-antiuav300-rfs data-flir data-antiuav e1 e2 e3 e4 e5 e6 report deploy-bench verify replay clean
 
 PY ?= python3
 FLIR_ARCHIVE_ARG = $(if $(AERO_FLIR_ARCHIVE),--archive "$(AERO_FLIR_ARCHIVE)")
@@ -32,6 +32,11 @@ audit-flir:
 manifest-flir:
 	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }
 	PYTHONPATH=src $(PY) scripts/build_flir_manifest.py --root "$(AERO_FLIR_ROOT)"
+
+manifest-flir-pairs:
+	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/build_flir_pair_manifest.py --root "$(AERO_FLIR_ROOT)" \
+		--video-map "$(AERO_FLIR_ROOT)/../rgb_to_thermal_vid_map.json"
 
 preprocess-flir:
 	@test -n "$(AERO_FLIR_ROOT)" || { echo "set AERO_FLIR_ROOT" >&2; exit 2; }

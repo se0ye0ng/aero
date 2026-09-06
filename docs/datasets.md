@@ -22,6 +22,24 @@ FLIR mirrors/releases in circulation do not all expose the same still-image coun
 must therefore record the actual COCO counts and source-archive hash; the dataset name alone is
 not a sufficient provenance identifier.
 
+### Local FLIR pair audit (2026-09-06)
+
+`make manifest-flir-pairs` freezes all 3,749 entries in the provider's official
+RGB-to-thermal map as a one-to-one, content-addressed manifest spanning eight `video_test`
+sequence pairs. The manifest is valid only for post-freeze generator evaluation and
+time-synchronisation/registration diagnostics. The release does not provide an official map for
+the RGB and thermal train/validation still images, so COCO ids, filenames or frame numbers must
+not be used to invent those pairs.
+
+The conservative registration audit compares boxes only when a unique shared
+`(track_id, category_id)` key exists in an officially paired frame. It finds 676 comparisons,
+all in one sequence pair; the other seven sequence pairs have no shared keys. For the available
+comparisons, normalised centre residual p95 is 0.0638 and median normalised box IoU is 0.5852.
+This fails the frozen 0.02 centre-residual threshold and complete-sequence-coverage requirement.
+Cross-modal track-id semantics are also undocumented. Consequently, direct label transfer,
+training-time transform fitting and generator training on these test pairs remain prohibited.
+The pair-manifest and audit hashes are `94d1a3b1...57acd69` and `6b6602eb...64bd8e9`.
+
 ## Coverage-split definition
 
 For `data.coverage_split=held_out_scenario`, a scenario slice (a range band, an aspect-angle
