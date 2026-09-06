@@ -58,7 +58,7 @@ after it, because an unqualified baseline cannot support later interpretation.
 | Phase | Goal | State | Runs |
 |---|---|---|---|
 | [0](#phase-0--scaffold-and-instrumentation) | Scaffold, sensor chain, RFS diagnostic | **CPU and RTX 4090 CUDA pilots passed** | 1 data-free pilot |
-| [1](#phase-1--data-layer-and-the-e1-protocol-transfer) | Data layer, detector, **three-arm protocol transfer** | Clean 300-epoch real baseline passed; replay next | 39 screening |
+| [1](#phase-1--data-layer-and-the-e1-protocol-transfer) | Data layer, detector, **three-arm protocol transfer** | Real-only baseline qualified; paired training source on HOLD; replay pending | 39 screening |
 | [2](#phase-2--the-controlled-experiment-f1-f3) | Pretraining and budget ablations — **the sign-flip test** | | 87 screening |
 | [3](#phase-3--label-audit-and-failure-mode-decomposition-f4-f5) | Label audit, stratified analysis | | 0 |
 | [4](#phase-4--rfs-predictive-power-n1) | Curation, **RFS vs task-aware metric predictive power** | | 30 screening + confirmation |
@@ -80,7 +80,7 @@ it beats the free option.**
 
 As of 2026-09-06:
 
-- **GO:** `make smoke` passes with 72 tests. The data-free pilot separated faithful RFS (0.542)
+- **GO:** `make smoke` passes with 75 tests. The data-free pilot separated faithful RFS (0.542)
   from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
   back-propagated a finite gradient through the sensor chain on CPU and CUDA. On an NVIDIA
   GeForce RTX 4090 with `torch==2.9.0+cu128`, the 10-iteration CUDA fixture measured 1.158 ms
@@ -97,6 +97,11 @@ As of 2026-09-06:
   (`3763f8e6...e19184`). The lazy registry loader, filtered COCO export, COCO evaluator and
   pinned YOLOX 0.3.0 CPU model/data preflight pass. Deterministic 128/64-image train/validation
   subsets are engineering-smoke inputs only and must never be reported as an experiment result.
+- **GO (test-pair provenance):** all 3,749 official time-synchronised `video_test` RGB/thermal
+  pairs across eight sequence pairs are frozen in an immutable manifest
+  (`94d1a3b1...57acd69`). Every mapped image is present in COCO, every frame index agrees, every
+  display/analytics file exists, and the map is one-to-one. This manifest is restricted to
+  post-freeze generator evaluation and registration diagnostics; it is not a training source.
 - **GO (engineering only):** the one-epoch, real-only YOLOX-s GPU smoke completed on `node39`
   with batch 8 and FP16. It trained all 16 iterations, wrote three checkpoints, and completed
   validation in 122.981 seconds wall time. The logged CUDA allocation was 1,812 MiB; at the
@@ -147,13 +152,22 @@ As of 2026-09-06:
   paired frames, and normalised box-centre residual p95 is 0.160-0.181 by split. Direct visible
   box reuse in IR is invalid until a calibrated transform and residual threshold are frozen.
   `test-dev` duplicates 100 training sequences and is not an independent evaluation split.
+- **HOLD (FLIR paired training and direct label transfer):** the provider supplies an official
+  map only for `video_test`, not for RGB/thermal training or validation stills. Shared unique
+  `(track_id, category_id)` keys provide 676 box comparisons, but all occur in only one of eight
+  mapped sequences; the other seven have none. Even in that sequence, normalised box-centre
+  residual p95 is 0.0638 against the frozen 0.02 limit (median normalised IoU 0.5852). Cross-modal
+  track-id semantics are undocumented. The registration audit (`6b6602eb...64bd8e9`) therefore
+  prohibits guessed still-image pairing, direct box reuse, transform calibration from test data,
+  and generator training on these pairs.
 - **HOLD (publication):** the real-only baseline is a verified reportable candidate, but its
   approximately six-hour manifest replay has not yet been executed. Generated and simulated arms
   also require an audited paired source manifest and generator checkpoints where applicable.
-- **GO for Phase 1 only after:** an immutable pair manifest is produced; RGB/thermal registration
-  is audited; all train/validation/test splits are disjoint by scene or video sequence; DiffV2IR
-  and PID checkpoints pass a fixed inference fixture; one detector arm completes end to end and
-  can be replayed from its manifest; and a one-cell timing pilot replaces estimated runtimes.
+- **GO for the Phase 1 three-arm screen only after:** a sequence-disjoint, training-authorised
+  paired source is frozen and its RGB/thermal registration passes the threshold; DiffV2IR and PID
+  checkpoints pass a fixed inference fixture; and the completed detector baseline successfully
+  replays from its manifest. The FLIR test-pair manifest, clean detector arm and timing pilot are
+  complete, but none of them waive the paired-training-source requirement.
 - **NO-GO for the full grid until:** pilot variance determines the number of confirmatory seeds
   and the RFS decision rule and grouped cross-validation protocol are frozen. Grid expansion now
   de-duplicates identical zero-generated controls across generator, budget and sensor factors.
@@ -200,7 +214,8 @@ baseline and establish the three-arm curve under a fully recorded protocol.
 
 | File | What |
 |---|---|
-| `src/aero_ir/data/flir.py` | COCO/T-linear audit, content-addressed detector manifest and lazy analytics16 loader are implemented. The remaining paired-generation manifest must not pair still images by COCO id: counts differ, while only the video subset has an official pair map. Record registration residuals, scene/video id and split provenance |
+| `src/aero_ir/data/flir.py` | COCO/T-linear audit, content-addressed detector manifest and lazy analytics16 loader are implemented |
+| `src/aero_ir/data/flir_pairs.py` | immutable official `video_test` pair manifest and conservative cross-modal box audit are implemented; training and transform calibration are explicitly prohibited because no official train/validation pairing exists and registration did not qualify |
 | `src/aero_ir/data/registry.py` | the FLIR loader is connected to the configured lazy dataset interface; images are `(H, W)` uint16 DN arrays and boxes use COCO `(x, y, w, h)` |
 | `src/aero_ir/detect/yolox_adapter.py` | the pinned backend and manifest-aware upstream experiment pass CPU and both GPU engineering checks; effective-batch accumulation is implemented and tested |
 | `src/aero_ir/detect/evaluate.py`, `yolox_evaluator.py` | complete COCO AP/AR and per-class metrics are implemented, fixture-tested and wired to formal training |
@@ -218,6 +233,7 @@ export AERO_FLIR_ARCHIVE=/path/to/downloaded-release.zip
 bash scripts/download_flir.sh          # verifies the official directory layout
 make audit-flir                        # writes experiments/flir_data_audit.json
 make manifest-flir                     # writes experiments/flir_trainval_manifest.json
+make manifest-flir-pairs               # freezes official video_test pairs; CPU, evaluation only
 make preprocess-flir                   # writes experiments/flir_preprocess.json
 make prepare-flir-yolox                # writes filtered COCO views; uses no GPU
 make pilot-flir-rfs                    # writes experiments/flir_rfs_pilot.json
