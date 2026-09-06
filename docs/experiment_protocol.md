@@ -91,6 +91,10 @@ reportable. Both 128/64-image one-epoch FLIR YOLOX smokes, including the batch-8
 accumulation check, are separately content-addressed engineering evidence and their AP must not
 enter an E1 table. The bounded full-data timing gate passed with batch 32 x accumulation 2: 160
 microbatches, 80 optimiser steps, six multiscale sizes, finite losses, 19.21 measured images/s
-including cold-size startup, and 9,827 MiB peak allocation. The next detector gate is a
-300-epoch real-only baseline prepared from the clean committed snapshot, followed by manifest
-replay and complete-metric verification; a dirty spec is rejected at protocol review.
+including cold-size startup, and 9,827 MiB peak allocation. The clean-snapshot 300-epoch real-only
+baseline then completed in 5.987 hours with 11,104 MiB peak allocation and final
+mAP@0.5:0.95/mAP@0.5 of 0.3513/0.5757. Its manifest, predictions, checkpoints and complete COCO
+metrics verify against commit `fc51f66...775220`. YOLOX's optional L1 regression term was zero
+during mosaic training by design and nonzero from displayed epoch 285, when the final
+no-augmentation phase began. The remaining baseline reproducibility gate is an explicit manifest
+replay; a dirty spec is rejected at protocol review.

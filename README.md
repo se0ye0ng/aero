@@ -58,7 +58,7 @@ after it, because an unqualified baseline cannot support later interpretation.
 | Phase | Goal | State | Runs |
 |---|---|---|---|
 | [0](#phase-0--scaffold-and-instrumentation) | Scaffold, sensor chain, RFS diagnostic | **CPU and RTX 4090 CUDA pilots passed** | 1 data-free pilot |
-| [1](#phase-1--data-layer-and-the-e1-protocol-transfer) | Data layer, detector, **three-arm protocol transfer** | Full-data timing passed; clean-snapshot baseline next | 39 screening |
+| [1](#phase-1--data-layer-and-the-e1-protocol-transfer) | Data layer, detector, **three-arm protocol transfer** | Clean 300-epoch real baseline passed; replay next | 39 screening |
 | [2](#phase-2--the-controlled-experiment-f1-f3) | Pretraining and budget ablations — **the sign-flip test** | | 87 screening |
 | [3](#phase-3--label-audit-and-failure-mode-decomposition-f4-f5) | Label audit, stratified analysis | | 0 |
 | [4](#phase-4--rfs-predictive-power-n1) | Curation, **RFS vs task-aware metric predictive power** | | 30 screening + confirmation |
@@ -78,7 +78,7 @@ it beats the free option.**
 
 ### Current GO / NO-GO gate
 
-As of 2026-09-05:
+As of 2026-09-06:
 
 - **GO:** `make smoke` passes with 72 tests. The data-free pilot separated faithful RFS (0.542)
   from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
@@ -125,6 +125,14 @@ As of 2026-09-05:
   `experiments/yolox_runs/flir_real_only_timing_b32_a2_w8_seed0_v1/run_manifest.json`
   (`91da0e27...601f0ac`). This engineering run truthfully records the then-dirty predecessor; it
   must not be rewritten as a clean run.
+- **GO (reportable candidate):** the clean-snapshot, real-only YOLOX-s baseline completed all 300
+  epochs in 5.987 hours on `node39`, using 11,104 MiB peak allocated CUDA memory. On all 1,144
+  validation images it reached mAP@0.5:0.95 0.3513, mAP@0.5 0.5757, mAR@0.5:0.95 0.4683 and
+  mAR@0.5 0.7480. Epoch 299 was best at 0.35134 mAP@0.5:0.95; epoch 300 was effectively equal at
+  0.35131. The manifest (`6eda51cd...70a4f6`), inputs, predictions, complete per-class metrics and
+  checkpoints verify against clean Git commit `fc51f66...775220`. L1 box regression is disabled
+  by YOLOX during mosaic training and correctly becomes nonzero in the final no-augmentation
+  phase, beginning at displayed epoch 285.
 - **RECORD:** the local mirror archive contains 11,886 thermal still images, whereas FLIR's page
   and bundled README state 9,711. The internally consistent local release may be used only under
   its recorded archive hash and counts; comparisons must not call it an unspecified "FLIR v2".
@@ -139,10 +147,9 @@ As of 2026-09-05:
   paired frames, and normalised box-centre residual p95 is 0.160-0.181 by split. Direct visible
   box reuse in IR is invalid until a calibrated transform and residual threshold are frozen.
   `test-dev` duplicates 100 training sequences and is not an independent evaluation split.
-- **HOLD:** reportable detector training. Engineering smokes and full-data timing passed, but the
-  real-only 300-epoch baseline must be prepared from the clean committed snapshot, populate the
-  complete COCO metric set, and replay successfully. Generated arms also require an audited
-  paired source manifest and generator checkpoints.
+- **HOLD (publication):** the real-only baseline is a verified reportable candidate, but its
+  approximately six-hour manifest replay has not yet been executed. Generated and simulated arms
+  also require an audited paired source manifest and generator checkpoints where applicable.
 - **GO for Phase 1 only after:** an immutable pair manifest is produced; RGB/thermal registration
   is audited; all train/validation/test splits are disjoint by scene or video sequence; DiffV2IR
   and PID checkpoints pass a fixed inference fixture; one detector arm completes end to end and
@@ -171,7 +178,7 @@ Class-conditioned RFS aggregation and a frozen undefined-statistic policy remain
 | Protocol, RFS spec, roadmap | `docs/` | written |
 | FLIR audit, immutable detector manifest and loader | `src/aero_ir/data/flir.py`, `data/registry.py` | implemented; local release passed |
 | Train-only analytics16 detector preprocessing | `src/aero_ir/data/preprocess.py` | implemented; 6076-8097 DN window frozen |
-| Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | CPU suite, both GPU smokes and full-data timing passed; clean-snapshot baseline pending |
+| Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | clean 300-epoch real-only baseline and complete COCO evaluation passed; replay pending |
 | Anti-UAV300 archive/video/annotation audit | `src/aero_ir/data/antiuav.py`, `scripts/audit_antiuav300.py` | implemented; archive, extraction and timing passed; annotation/registration holds recorded |
 
 **Exit criterion met.** `make smoke` passes, and the Phase 0 pilot passes on the intended RTX
@@ -218,12 +225,11 @@ python scripts/run_grid.py e1_reproduce --dry-run
 # The two engineering-subset GPU smokes have passed. Preserve their records:
 make record-flir-yolox-smoke \
   RUN_DIR=experiments/yolox_runs/flir_real_only_smoke_seed0
-# Full-data timing passed with batch 32 x accumulation 2 and eight workers.
-# Prepare the baseline only after confirming a clean committed checkout:
-.venv/bin/python scripts/run_flir_yolox.py prepare \
-  --mode train --run-id flir_real_only_full_seed0_v1 \
-  --root "$AERO_FLIR_ROOT" --batch-size 32 \
-  --gradient-accumulation-steps 2 --effective-batch-size 64 --workers 8
+# The clean 300-epoch real-only baseline has completed. Verify without using a GPU:
+.venv/bin/python scripts/verify_run.py \
+  --run experiments/yolox_runs/flir_real_only_full_seed0_v1/run_manifest.json
+# Full replay is intentionally explicit and costs approximately six GPU-hours:
+# make replay RUN=experiments/yolox_runs/flir_real_only_full_seed0_v1/run_manifest.json
 # after every HOLD gate above is cleared:
 make e1
 ```
@@ -558,6 +564,11 @@ including cold-size startup, with 9,827 MiB peak allocation. Novel sizes incurre
 43-second one-time CUDA/cuDNN initialization stalls; a repeated 672-pixel block averaged about
 0.20 seconds per microbatch. Batch 32 therefore has ample memory headroom and is the frozen
 single-GPU microbatch policy; raw short-pilot throughput remains a conservative runtime estimate.
+The corresponding 300-epoch real-only run completed in 5.987 hours and peaked at 11,104 MiB,
+substantially improving the conservative 47-hour pilot projection. Its final mAP@0.5:0.95 is
+0.3513. The normally zero L1 term is expected: YOLOX enables its optional L1 box-regression loss
+only after mosaic is disabled for the final no-augmentation phase; this run activated it at
+displayed epoch 285, after which logged L1 losses were approximately 0.3--0.5.
 
 On this checkout on 2026-09-05, the Phase 0 CUDA fixture passed on an RTX 4090 with
 `torch==2.9.0+cu128`: 1.158 ms mean forward/backward time over 10 measured iterations and
@@ -580,16 +591,15 @@ Set `tracking.wandb.mode=offline` on a host without outbound network and sync la
 
 ## Compute budget
 
-Only the Phase 1 row now has an RTX 4090 measurement: its conservative projection applies the
-19.21 images/s cold-start-inclusive pilot throughput to all 300 epochs and therefore likely
-overstates steady-state training time. Other rows remain placeholders until their own pilots.
-Before approving the grid, also benchmark generator inference and record checkpoint size and
-total wall time. Counts below are raw Cartesian cells: identical zero-generated controls must be
-scheduled once and referenced by the other cells rather than retrained.
+Only the Phase 1 row now has a measured full-run RTX 4090 wall time. Other rows remain
+placeholders until their own pilots. Before approving the grid, also benchmark generator
+inference and record checkpoint size and total wall time. Counts below are raw Cartesian cells:
+identical zero-generated controls must be scheduled once and referenced by the other cells rather
+than retrained.
 
 | Phase | Screening runs | Init | Epochs | RTX 4090 runtime |
 |---|---|---|---|---|
-| 1 (E1) | 42 | scratch | 300 | ~47 h/run conservative pilot projection |
+| 1 (E1) | 42 | scratch | 300 | 5.987 h measured real-only baseline |
 | 2 (E2) | 24 | mixed, schedule matched | 100 | TBD by pilot |
 | 2 (E3) | 72 | pretrained | 100 | TBD by pilot |
 | 4 (E4) | 30 | pretrained | 100 | TBD by pilot |
