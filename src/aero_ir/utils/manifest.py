@@ -211,7 +211,7 @@ def _compare_metrics(expected, actual, tolerance: float, prefix: str = "") -> li
         if expected != actual:
             failures.append(f"{prefix}: expected {expected!r}, got {actual!r}")
         return failures
-    if isinstance(expected, (int, float)):
+    if isinstance(expected, int | float):
         try:
             difference = abs(float(expected) - float(actual))
         except (TypeError, ValueError):
