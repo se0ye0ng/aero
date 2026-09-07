@@ -16,6 +16,7 @@ from aero_ir.utils.manifest import RunManifest, canonical_hash, file_sha256
 
 RUN_SPEC_SCHEMA = 1
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+DETERMINISTIC_CUBLAS_WORKSPACE_CONFIG = ":4096:8"
 DEFAULT_CODE_PATHS = (
     "pyproject.toml",
     "requirements/yolox.txt",
@@ -177,6 +178,14 @@ def prepare_yolox_run_spec(
         "eval_interval": eval_interval,
         "fp16": fp16,
         "augmentation": "yolox_default_mosaic_mixup_multiscale",
+        "determinism": {
+            "worker_seed": "run_seed_plus_worker_id",
+            "cudnn_deterministic": True,
+            "cudnn_benchmark": False,
+            "torch_deterministic_algorithms": True,
+            "cublas_workspace_config": DETERMINISTIC_CUBLAS_WORKSPACE_CONFIG,
+            "pythonhashseed": str(seed),
+        },
         "save_history_checkpoints": False,
     }
     spec = {
@@ -344,6 +353,7 @@ def finalize_yolox_run(
         "torch_version": runtime["torch_version"],
         "torch_cuda_version": runtime["torch_cuda_version"],
         "yolox_version": "0.3.0",
+        "determinism": runtime.get("determinism", {}),
     }
     hardware = {
         "host": runtime["host"],
@@ -368,7 +378,11 @@ def finalize_yolox_run(
             "--spec",
             command_spec,
         ],
-        command_environment={"CUDA_VISIBLE_DEVICES": "0"},
+        command_environment={
+            "CUDA_VISIBLE_DEVICES": "0",
+            "CUBLAS_WORKSPACE_CONFIG": DETERMINISTIC_CUBLAS_WORKSPACE_CONFIG,
+            "PYTHONHASHSEED": str(spec["resolved_config"]["seed"]),
+        },
         unset_environment=["LD_LIBRARY_PATH"],
         working_directory=str(repository_root),
         metrics_path=metrics_name,
@@ -404,6 +418,8 @@ def execute_yolox_run(spec_path: str | Path) -> Path:
     environment.update(
         {
             "CUDA_VISIBLE_DEVICES": "0",
+            "CUBLAS_WORKSPACE_CONFIG": DETERMINISTIC_CUBLAS_WORKSPACE_CONFIG,
+            "PYTHONHASHSEED": str(config["seed"]),
             "PYTHONPATH": str(Path(spec["repository_root"]) / "src"),
             "AERO_FLIR_ROOT": spec["dataset_root"],
             "AERO_FLIR_YOLOX_ROOT": spec["prepared_root"],

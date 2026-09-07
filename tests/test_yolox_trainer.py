@@ -1,8 +1,15 @@
+import random
 from pathlib import Path
 
+import numpy as np
 import pytest
+import torch
 
-from aero_ir.detect.yolox_flir_exp import Exp
+from aero_ir.detect.yolox_flir_exp import (
+    Exp,
+    deterministic_worker_init,
+    enforce_deterministic_torch,
+)
 from aero_ir.detect.yolox_trainer import (
     AccumulatingTrainer,
     accumulation_step,
@@ -58,6 +65,43 @@ def test_flir_exp_rejects_newline_in_dataset_root(monkeypatch):
 
     with pytest.raises(ValueError, match="contains a newline"):
         Exp()
+
+
+def test_worker_augmentation_seed_is_repeatable_and_worker_specific():
+    python_state = random.getstate()
+    numpy_state = np.random.get_state()
+    torch_state = torch.get_rng_state()
+    try:
+        samples = []
+        for worker_id in (0, 1, 0):
+            deterministic_worker_init(worker_id, base_seed=19)
+            samples.append((random.random(), float(np.random.random()), float(torch.rand(1))))
+    finally:
+        random.setstate(python_state)
+        np.random.set_state(numpy_state)
+        torch.set_rng_state(torch_state)
+
+    assert samples[0] == samples[2]
+    assert samples[0] != samples[1]
+
+
+def test_torch_determinism_policy_disables_algorithm_benchmarking():
+    previous_benchmark = torch.backends.cudnn.benchmark
+    previous_deterministic = torch.backends.cudnn.deterministic
+    previous_algorithms = torch.are_deterministic_algorithms_enabled()
+    try:
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.deterministic = False
+        torch.use_deterministic_algorithms(False)
+        enforce_deterministic_torch()
+
+        assert not torch.backends.cudnn.benchmark
+        assert torch.backends.cudnn.deterministic
+        assert torch.are_deterministic_algorithms_enabled()
+    finally:
+        torch.backends.cudnn.benchmark = previous_benchmark
+        torch.backends.cudnn.deterministic = previous_deterministic
+        torch.use_deterministic_algorithms(previous_algorithms)
 
 
 def test_timing_summary_excludes_warmup_and_reports_throughput():

@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 import json
 import math
+import os
 import socket
 import time
 from contextlib import nullcontext
@@ -340,6 +341,13 @@ class AccumulatingTrainer(Trainer):
             "torch_cuda_version": torch.version.cuda,
             "device_name": torch.cuda.get_device_name(self.device),
             "peak_cuda_memory_mib": torch.cuda.max_memory_allocated(self.device) / (1024**2),
+            "determinism": {
+                "cudnn_deterministic": bool(torch.backends.cudnn.deterministic),
+                "cudnn_benchmark": bool(torch.backends.cudnn.benchmark),
+                "torch_deterministic_algorithms": (torch.are_deterministic_algorithms_enabled()),
+                "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG", ""),
+                "pythonhashseed": os.environ.get("PYTHONHASHSEED", ""),
+            },
         }
         payload["runtime_sha256"] = canonical_hash(payload)
         path = Path(self.file_name) / "runtime.json"

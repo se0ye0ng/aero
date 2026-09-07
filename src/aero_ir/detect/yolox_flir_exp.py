@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import math
 import os
+import random
+from functools import partial
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.distributed as dist
 from yolox.data import (
@@ -15,7 +18,6 @@ from yolox.data import (
     TrainTransform,
     ValTransform,
     YoloBatchSampler,
-    worker_init_reset_seed,
 )
 from yolox.exp import Exp as YOLOXExp
 from yolox.utils import wait_for_the_master
@@ -23,6 +25,21 @@ from yolox.utils import wait_for_the_master
 from aero_ir.detect.flir_yolox import build_flir_yolox_dataset
 from aero_ir.detect.yolox_evaluator import CompleteCOCOEvaluator
 from aero_ir.detect.yolox_trainer import AccumulatingTrainer
+
+
+def deterministic_worker_init(worker_id: int, *, base_seed: int) -> None:
+    """Seed every augmentation RNG deterministically for one data-loader worker."""
+    worker_seed = (int(base_seed) + int(worker_id)) % (2**32)
+    random.seed(worker_seed)
+    np.random.seed(worker_seed)
+    torch.manual_seed(worker_seed)
+
+
+def enforce_deterministic_torch() -> None:
+    """Undo YOLOX's benchmark override and reject nondeterministic Torch operations."""
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True)
 
 
 class Exp(YOLOXExp):
@@ -85,6 +102,7 @@ class Exp(YOLOXExp):
         return super().get_lr_scheduler(effective_lr, optimizer_steps)
 
     def get_trainer(self, args):
+        enforce_deterministic_torch()
         return AccumulatingTrainer(self, args)
 
     def _dataset(self, annotation_file: str, transform):
@@ -142,7 +160,7 @@ class Exp(YOLOXExp):
             num_workers=self.data_num_workers,
             pin_memory=True,
             batch_sampler=batch_sampler,
-            worker_init_fn=worker_init_reset_seed,
+            worker_init_fn=partial(deterministic_worker_init, base_seed=self.seed),
         )
 
     def get_eval_loader(self, batch_size, is_distributed, testdev=False, legacy=False):
