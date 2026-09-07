@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -137,21 +138,60 @@ def _resolved_path(path: str, base: Path) -> Path:
     return candidate if candidate.is_absolute() else base / candidate
 
 
-def verify_artifacts(manifest: dict, base: Path) -> dict[str, str]:
+def _git_blob_sha256(path: Path, repository_root: Path, git_sha: str) -> str | None:
+    if re.fullmatch(r"[0-9a-f]{40}", git_sha) is None:
+        return None
+    repository_root = repository_root.resolve()
+    try:
+        relative = path.resolve().relative_to(repository_root)
+    except ValueError:
+        return None
+    try:
+        completed = subprocess.run(
+            ["git", "show", f"{git_sha}:{relative.as_posix()}"],
+            cwd=repository_root,
+            check=False,
+            capture_output=True,
+        )
+    except OSError:
+        return None
+    if completed.returncode != 0:
+        return None
+    return hashlib.sha256(completed.stdout).hexdigest()
+
+
+def verify_artifacts(
+    manifest: dict,
+    base: Path,
+    *,
+    repository_root: Path | None = None,
+    git_sha: str = "",
+    verified_from_git: list[str] | None = None,
+) -> dict[str, str]:
     """Verify every content-addressed input/output declared by a run."""
     verified: dict[str, str] = {}
     for name, specification in manifest.get("artifacts", {}).items():
         if set(specification) != {"path", "sha256"}:
             raise ValueError(f"artifact {name!r} must contain only path and sha256")
         path = _resolved_path(specification["path"], base)
-        if not path.is_file():
+        actual = file_sha256(path) if path.is_file() else None
+        if actual == specification["sha256"]:
+            verified[name] = actual
+            continue
+        git_actual = None
+        if name.startswith("input__") and repository_root is not None:
+            git_actual = _git_blob_sha256(path, repository_root, git_sha)
+        if git_actual == specification["sha256"]:
+            verified[name] = git_actual
+            if verified_from_git is not None:
+                verified_from_git.append(name)
+            continue
+        if actual is None:
             raise FileNotFoundError(path)
-        actual = file_sha256(path)
         if actual != specification["sha256"]:
             raise ValueError(
                 f"artifact {name!r} hash mismatch: expected {specification['sha256']}, got {actual}"
             )
-        verified[name] = actual
     return verified
 
 
@@ -199,17 +239,32 @@ def verify_run_manifest(
     path = Path(path).resolve()
     manifest = load_manifest(path)
     base = path.parent
-    artifacts = verify_artifacts(manifest, base)
+    working_directory = manifest.get("working_directory")
+    cwd = _resolved_path(working_directory, base) if working_directory else base
+    verified_from_git: list[str] = []
+    artifacts = verify_artifacts(
+        manifest,
+        base,
+        repository_root=cwd,
+        git_sha=str(manifest.get("git_sha", "")),
+        verified_from_git=verified_from_git,
+    )
     report = {
         "run_id": manifest["run_id"],
         "manifest_sha256": manifest["manifest_sha256"],
         "verified_artifacts": artifacts,
+        "verified_from_git": verified_from_git,
         "replayed": False,
         "metric_failures": [],
         "ok": True,
     }
     if not execute:
         return report
+    if verified_from_git:
+        raise ValueError(
+            "replay requires the checked-out source files to match the manifest; "
+            f"historical Git verification was needed for: {', '.join(verified_from_git)}"
+        )
 
     command = manifest.get("command", [])
     metrics_path = manifest.get("metrics_path")
@@ -217,8 +272,6 @@ def verify_run_manifest(
         raise ValueError("replay requires a non-empty command token list")
     if not metrics_path:
         raise ValueError("replay requires metrics_path")
-    working_directory = manifest.get("working_directory")
-    cwd = _resolved_path(working_directory, base) if working_directory else base
     environment = {**os.environ, **manifest.get("command_environment", {})}
     for name in manifest.get("unset_environment", []):
         if not isinstance(name, str) or not name:

@@ -96,9 +96,23 @@ baseline then completed in 5.987 hours with 11,104 MiB peak allocation and final
 mAP@0.5:0.95/mAP@0.5 of 0.3513/0.5757. Its manifest, predictions, checkpoints and complete COCO
 metrics verify against commit `fc51f66...775220`. YOLOX's optional L1 regression term was zero
 during mosaic training by design and nonzero from displayed epoch 285, when the final
-no-augmentation phase began. The remaining baseline reproducibility gate is an explicit manifest
-replay; a dirty spec is rejected at protocol review. Separately, the FLIR official map has now
-been frozen as 3,749 `video_test` pairs, but it cannot supply generator training data: shared
+no-augmentation phase began.
+
+The 2026-09-07 full replay completed but failed the frozen 0.002 tolerance: its
+mAP@0.5:0.95 was 0.35744 versus 0.35131 originally, and its mAP@0.5 was 0.58947 versus 0.57572.
+The input, sampler, optimiser-step and multiscale schedules match, but losses differ from the
+first logged interval. Upstream YOLOX 0.3.0 initializes each augmentation worker from
+`uuid.uuid4()`, so the declared run seed did not control mosaic, mixup and flip randomness. The
+v1 result and failed replay remain immutable evidence; the tolerance must not be relaxed after
+observing the difference. The adapter now uses deterministic per-worker seeds, disables cuDNN
+benchmarking, enables deterministic Torch algorithms, and freezes cuBLAS/Python hash settings.
+Twin short GPU runs must match before preparing a clean v2 baseline and replay.
+Historical read-only verification resolves changed tracked inputs from the manifest's recorded
+clean Git commit and reports them explicitly; replay execution is refused unless the checkout
+itself matches every bound source file.
+
+Separately, the FLIR official map has now been frozen as 3,749 `video_test` pairs, but it cannot
+supply generator training data: shared
 track/category evidence covers only one of eight sequences and has normalised centre-residual
 p95 0.0638 against the frozen 0.02 limit. The three-arm screen therefore remains on hold until a
 training-authorised, sequence-disjoint paired source passes registration and is frozen in its own

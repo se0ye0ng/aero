@@ -93,7 +93,16 @@ def test_run_spec_is_content_addressed_and_rejects_changed_code(tmp_path):
     path = tmp_path / "spec.json"
     save_yolox_run_spec(spec, path)
 
-    assert load_yolox_run_spec(path)["resolved_config"]["max_train_iters"] == 16
+    resolved = load_yolox_run_spec(path)["resolved_config"]
+    assert resolved["max_train_iters"] == 16
+    assert resolved["determinism"] == {
+        "worker_seed": "run_seed_plus_worker_id",
+        "cudnn_deterministic": True,
+        "cudnn_benchmark": False,
+        "torch_deterministic_algorithms": True,
+        "cublas_workspace_config": ":4096:8",
+        "pythonhashseed": "0",
+    }
 
     Path(spec["code"]["code.py"]["path"]).write_text("fixed = False\n", encoding="utf-8")
     with pytest.raises(ValueError, match="code.py.*hash mismatch"):
@@ -207,6 +216,8 @@ def test_execute_uses_verified_full_data_environment_without_library_override(
     assert captured["env"]["AERO_YOLOX_RUN_MODE"] == "timing"
     assert captured["env"]["AERO_YOLOX_TRAIN_ANN"] == "train.json"
     assert captured["env"]["AERO_YOLOX_MAX_TRAIN_ITERS"] == "16"
+    assert captured["env"]["CUBLAS_WORKSPACE_CONFIG"] == ":4096:8"
+    assert captured["env"]["PYTHONHASHSEED"] == "0"
     assert captured["command"][-4:] == [
         "-expn",
         "timing-seed0",

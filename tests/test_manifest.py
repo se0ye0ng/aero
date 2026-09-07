@@ -3,6 +3,7 @@ import sys
 
 import pytest
 
+from aero_ir.utils import manifest as manifest_module
 from aero_ir.utils.manifest import (
     RunManifest,
     canonical_hash,
@@ -103,3 +104,31 @@ def test_run_manifest_replays_into_an_isolated_output_root(tmp_path):
     assert report["ok"]
     assert report["replayed"]
     assert not (tmp_path / "run" / "metrics.json").exists()
+
+
+def test_historical_git_blob_verifies_but_cannot_execute(tmp_path, monkeypatch):
+    artifact = tmp_path / "code.py"
+    artifact.write_text("old code\n", encoding="utf-8")
+    expected = file_sha256(artifact)
+    config = {"experiment": "historical"}
+    run = RunManifest(
+        run_id="historical",
+        config_hash=canonical_hash(config),
+        experiment="fixture",
+        seed=0,
+        resolved_config=config,
+        artifacts={"input__code.py": {"path": "code.py", "sha256": expected}},
+        working_directory=str(tmp_path),
+        git_sha="a" * 40,
+    )
+    manifest_path = tmp_path / "run.json"
+    run.save(manifest_path)
+    artifact.write_text("new code\n", encoding="utf-8")
+    monkeypatch.setattr(manifest_module, "_git_blob_sha256", lambda *args: expected)
+
+    report = verify_run_manifest(manifest_path)
+
+    assert report["ok"]
+    assert report["verified_from_git"] == ["input__code.py"]
+    with pytest.raises(ValueError, match="checked-out source files"):
+        verify_run_manifest(manifest_path, execute=True)
