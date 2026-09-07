@@ -267,6 +267,8 @@ make record-flir-yolox-smoke \
   --run experiments/yolox_runs/flir_real_only_full_seed0_v1/run_manifest.json
 # Its full replay completed but failed the deterministic tolerance. Do not rerun or alter v1.
 # The twin deterministic GPU smoke now passes; prepare a clean v2 baseline and replay next.
+# Run the clean 300-epoch v2 baseline (about six hours on one RTX 4090):
+bash scripts/run_flir_v2_baseline.sh
 # after every HOLD gate above is cleared:
 make e1
 ```
