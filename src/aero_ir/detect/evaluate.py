@@ -24,7 +24,7 @@ def _load_coco_ground_truth(ground_truth):
 
     if isinstance(ground_truth, COCO):
         return ground_truth
-    if isinstance(ground_truth, (str, Path)):
+    if isinstance(ground_truth, str | Path):
         with contextlib.redirect_stdout(io.StringIO()):
             return COCO(str(ground_truth))
     if isinstance(ground_truth, dict):
@@ -37,7 +37,7 @@ def _load_coco_ground_truth(ground_truth):
 
 
 def _load_predictions(predictions) -> list[dict]:
-    if isinstance(predictions, (str, Path)):
+    if isinstance(predictions, str | Path):
         predictions = json.loads(Path(predictions).read_text(encoding="utf-8"))
     if not isinstance(predictions, list):
         raise TypeError("predictions must be a list or a JSON path containing a list")

@@ -58,7 +58,7 @@ after it, because an unqualified baseline cannot support later interpretation.
 | Phase | Goal | State | Runs |
 |---|---|---|---|
 | [0](#phase-0--scaffold-and-instrumentation) | Scaffold, sensor chain, RFS diagnostic | **CPU and RTX 4090 CUDA pilots passed** | 1 data-free pilot |
-| [1](#phase-1--data-layer-and-the-e1-protocol-transfer) | Data layer, detector, **three-arm protocol transfer** | v1 replay exposed random worker seeds; deterministic v2 and paired training source on HOLD | 39 screening |
+| [1](#phase-1--data-layer-and-the-e1-protocol-transfer) | Data layer, detector, **three-arm protocol transfer** | deterministic twin GPU smoke passed; clean v2 full baseline/replay and paired training source on HOLD | 39 screening |
 | [2](#phase-2--the-controlled-experiment-f1-f3) | Pretraining and budget ablations — **the sign-flip test** | | 87 screening |
 | [3](#phase-3--label-audit-and-failure-mode-decomposition-f4-f5) | Label audit, stratified analysis | | 0 |
 | [4](#phase-4--rfs-predictive-power-n1) | Curation, **RFS vs task-aware metric predictive power** | | 30 screening + confirmation |
@@ -78,9 +78,9 @@ it beats the free option.**
 
 ### Current GO / NO-GO gate
 
-As of 2026-09-07:
+As of 2026-09-08:
 
-- **GO:** `make smoke` passes with 78 tests. The data-free pilot separated faithful RFS (0.542)
+- **GO:** `make smoke` passes with 79 tests. The data-free pilot separated faithful RFS (0.542)
   from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
   back-propagated a finite gradient through the sensor chain on CPU and CUDA. On an NVIDIA
   GeForce RTX 4090 with `torch==2.9.0+cu128`, the 10-iteration CUDA fixture measured 1.158 ms
@@ -146,11 +146,15 @@ As of 2026-09-07:
   `worker_init_reset_seed`, which uses `uuid.uuid4()` for mosaic/mixup/flip augmentation workers.
   The failed replay log is retained locally with SHA-256 `3a8e6bc5...66e6eed`; v1 remains frozen
   and must not be rewritten or rescued by weakening the threshold after seeing the result.
-- **FIX READY; GPU CHECK PENDING:** the adapter now derives worker seeds from the run seed and
-  worker id, disables cuDNN benchmarking, requires deterministic Torch algorithms, and freezes
-  `CUBLAS_WORKSPACE_CONFIG` plus `PYTHONHASHSEED` in the run spec/environment. Two short
-  independent GPU smokes must produce identical traces and weights before preparing a v2 formal
-  baseline.
+- **GO (determinism engineering gate):** two independent 20-epoch, seed-0 GPU runs produced
+  byte-identical final checkpoints (`db76237e...50333e`) and predictions
+  (`0707d2a3...0987db`), identical scientific metrics, and identical normalised loss/LR traces
+  across all 20 logged epochs. Both runtime records confirm deterministic Torch algorithms,
+  deterministic cuDNN, disabled cuDNN benchmarking, `CUBLAS_WORKSPACE_CONFIG=:4096:8`, and
+  `PYTHONHASHSEED=0` on the RTX 4090. The content-addressed comparison report
+  `experiments/flir_yolox_determinism_smoke.json` (`11fdf3de...9d48c`) passes. Early FP16
+  checkpoints produced zero-extent boxes; the evaluator now excludes and counts only such
+  non-representable outputs at the model-to-COCO boundary. The final evaluation excluded none.
 - **RECORD:** the local mirror archive contains 11,886 thermal still images, whereas FLIR's page
   and bundled README state 9,711. The internally consistent local release may be used only under
   its recorded archive hash and counts; comparisons must not call it an unspecified "FLIR v2".
@@ -175,8 +179,9 @@ As of 2026-09-07:
   and generator training on these pairs.
 - **HOLD (publication):** the real-only v1 baseline and replay are plausible independent outcomes,
   but the replay failed its frozen reproducibility tolerance because augmentation workers were
-  not deterministic. A clean deterministic v2 run and replay are required. Generated and
-  simulated arms also require an audited paired source manifest and generator checkpoints.
+  not deterministic. The deterministic twin GPU smoke now passes exactly; a clean full v2 run
+  and replay are still required. Generated and simulated arms also require an audited paired
+  source manifest and generator checkpoints.
 - **GO for the Phase 1 three-arm screen only after:** a sequence-disjoint, training-authorised
   paired source is frozen and its RGB/thermal registration passes the threshold; DiffV2IR and PID
   checkpoints pass a fixed inference fixture; and a deterministic detector baseline successfully
@@ -206,7 +211,7 @@ Class-conditioned RFS aggregation and a frozen undefined-statistic policy remain
 | Protocol, RFS spec, roadmap | `docs/` | written |
 | FLIR audit, immutable detector manifest and loader | `src/aero_ir/data/flir.py`, `data/registry.py` | implemented; local release passed |
 | Train-only analytics16 detector preprocessing | `src/aero_ir/data/preprocess.py` | implemented; 6076-8097 DN window frozen |
-| Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | v1 baseline and full replay completed but exceeded tolerance; random worker seed diagnosed and deterministic fix awaits twin GPU smoke |
+| Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | v1 replay exceeded tolerance; deterministic worker/evaluator fix passes an exact twin GPU smoke; clean full v2 baseline/replay pending |
 | Anti-UAV300 archive/video/annotation audit | `src/aero_ir/data/antiuav.py`, `scripts/audit_antiuav300.py` | implemented; archive, extraction and timing passed; annotation/registration holds recorded |
 
 **Exit criterion met.** `make smoke` passes, and the Phase 0 pilot passes on the intended RTX
@@ -252,14 +257,16 @@ make preprocess-flir                   # writes experiments/flir_preprocess.json
 make prepare-flir-yolox                # writes filtered COCO views; uses no GPU
 make pilot-flir-rfs                    # writes experiments/flir_rfs_pilot.json
 python scripts/run_grid.py e1_reproduce --dry-run
+# Two independent 20-epoch subset runs plus exact determinism comparison:
+bash scripts/run_flir_determinism_smoke.sh
 # The two engineering-subset GPU smokes have passed. Preserve their records:
 make record-flir-yolox-smoke \
   RUN_DIR=experiments/yolox_runs/flir_real_only_smoke_seed0
 # The v1 baseline artifacts remain valid and can be verified without using a GPU:
 .venv/bin/python scripts/verify_run.py \
   --run experiments/yolox_runs/flir_real_only_full_seed0_v1/run_manifest.json
-# Its full replay completed but failed the deterministic tolerance. Do not rerun or alter v1;
-# validate the deterministic fix with twin short GPU smokes before preparing a v2 baseline.
+# Its full replay completed but failed the deterministic tolerance. Do not rerun or alter v1.
+# The twin deterministic GPU smoke now passes; prepare a clean v2 baseline and replay next.
 # after every HOLD gate above is cleared:
 make e1
 ```
@@ -602,8 +609,9 @@ displayed epoch 285, after which logged L1 losses were approximately 0.3--0.5.
 Its full replay completed in 5.736 hours and reached 0.3574 mAP@0.5:0.95, 0.00613 above the
 original and outside the frozen 0.002 tolerance. The schedule matched, but augmentation-worker
 RNGs did not: upstream YOLOX 0.3.0 seeds them from UUIDs. The current adapter replaces that path
-with deterministic worker seeds and strict CUDA algorithm settings; a twin GPU smoke and then a
-new clean v2 baseline/replay are required before the baseline is reportable.
+with deterministic worker seeds and strict CUDA algorithm settings. Its twin GPU smoke produced
+exactly matching checkpoints, predictions, scientific metrics and normalised training traces. A
+new clean full v2 baseline/replay is still required before the baseline is reportable.
 
 On this checkout on 2026-09-05, the Phase 0 CUDA fixture passed on an RTX 4090 with
 `torch==2.9.0+cu128`: 1.158 ms mean forward/backward time over 10 measured iterations and

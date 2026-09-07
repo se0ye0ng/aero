@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from yolox.evaluators import COCOEvaluator
@@ -10,6 +11,38 @@ from yolox.utils import is_main_process
 
 from aero_ir.detect.evaluate import coco_metrics
 from aero_ir.utils.manifest import canonical_hash, file_sha256
+
+
+def filter_invalid_model_predictions(predictions: list[dict]) -> tuple[list[dict], dict[str, int]]:
+    """Drop numerical degeneracies that cannot be represented as COCO detections."""
+    valid: list[dict] = []
+    counts = {
+        "received": len(predictions),
+        "retained": 0,
+        "dropped_non_finite": 0,
+        "dropped_non_positive_extent": 0,
+    }
+    required = {"image_id", "category_id", "bbox", "score"}
+    for index, prediction in enumerate(predictions):
+        if not isinstance(prediction, dict) or not required <= prediction.keys():
+            raise ValueError(f"model prediction {index} is not a COCO result dictionary")
+        box = prediction["bbox"]
+        if not isinstance(box, list | tuple) or len(box) != 4:
+            raise ValueError(f"model prediction {index} does not contain a four-value box")
+        try:
+            coordinates = [float(value) for value in box]
+            score = float(prediction["score"])
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"model prediction {index} contains non-numeric values") from error
+        if not all(math.isfinite(value) for value in (*coordinates, score)):
+            counts["dropped_non_finite"] += 1
+            continue
+        if coordinates[2] <= 0.0 or coordinates[3] <= 0.0:
+            counts["dropped_non_positive_extent"] += 1
+            continue
+        valid.append(prediction)
+    counts["retained"] = len(valid)
+    return valid, counts
 
 
 class CompleteCOCOEvaluator(COCOEvaluator):
@@ -24,6 +57,7 @@ class CompleteCOCOEvaluator(COCOEvaluator):
         if not is_main_process():
             return 0.0, 0.0, None
 
+        data_dict, prediction_filter = filter_invalid_model_predictions(data_dict)
         self.predictions_path.parent.mkdir(parents=True, exist_ok=True)
         self.predictions_path.write_text(
             json.dumps(data_dict, indent=2, sort_keys=True) + "\n",
@@ -39,6 +73,7 @@ class CompleteCOCOEvaluator(COCOEvaluator):
             "kind": "flir_yolox_coco_metrics",
             "status": "pass",
             **metrics,
+            "prediction_filter": prediction_filter,
             "timing": {
                 "forward_ms_per_image": 1000.0 * inference_time / denominator,
                 "nms_ms_per_image": 1000.0 * nms_time / denominator,
@@ -55,5 +90,10 @@ class CompleteCOCOEvaluator(COCOEvaluator):
             json.dumps(payload, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        summary = "AERO complete COCO metrics:\n" + json.dumps(metrics, indent=2, sort_keys=True)
+        summary = (
+            "AERO prediction filtering:\n"
+            + json.dumps(prediction_filter, indent=2, sort_keys=True)
+            + "\nAERO complete COCO metrics:\n"
+            + json.dumps(metrics, indent=2, sort_keys=True)
+        )
         return float(metrics["map_50_95"]), float(metrics["map_50"]), summary
