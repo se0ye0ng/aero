@@ -277,8 +277,7 @@ make record-flir-yolox-smoke \
 # The launcher refuses to overwrite that baseline; retain this as its reproduction command:
 bash scripts/run_flir_v2_baseline.sh
 # Replay the frozen v2 manifest on a GPU as the remaining reproducibility gate:
-env -u LD_LIBRARY_PATH PATH="$PWD/.venv/bin:$PATH" make replay \
-  RUN=experiments/yolox_runs/flir_real_only_full_seed0_v2/run_manifest.json
+bash scripts/replay_flir_v2_baseline.sh
 # after every HOLD gate above is cleared:
 make e1
 ```
