@@ -38,7 +38,7 @@ Fixed generated-sample budget, varying `curation.policy`. Tests H4 and, by compa
 
 ### E5 — sequence-disjoint small-target external validation
 Use paired Anti-UAV300 training sequences for visible-to-IR development and IR-only Anti-UAV410
-as external evaluation through an explicit tracking-to-frame-detection adapter. Never expose
+as external evaluation through the manifest-locked tracking-to-frame-detection adapter. Never expose
 validation/test frames or annotations to the generator. Do not claim a non-acquirable-scenario
 coverage result without an independent source for those scenarios.
 

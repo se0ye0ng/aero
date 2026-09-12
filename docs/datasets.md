@@ -51,7 +51,7 @@ provenance live in `configs/data/*.yaml` and are frozen before any run.
 
 Anti-UAV does not currently satisfy that genuine-coverage design. E5 instead uses Anti-UAV300
 paired training sequences for development and Anti-UAV410 as IR-only, sequence-disjoint external
-evaluation. A tracking-to-frame-detection adapter must preserve video ids and visibility flags.
+evaluation. The tracking-to-frame-detection adapter preserves sequence ids and visibility flags.
 
 ### Local Anti-UAV300 audit (2026-09-05)
 
@@ -64,3 +64,19 @@ videos also have different resolutions and substantial residual box-centre offse
 RGB-to-IR box transfer is prohibited until a calibrated transform is qualified. The corresponding
 train-only RFS pilot uses display-referred 8-bit IR video and is a plumbing diagnostic, not a
 radiometric or downstream-AP result.
+
+### Local Anti-UAV410 audit (2026-09-12)
+
+`make audit-antiuav410` binds the extracted release to a CRC-clean 9,361,681,896-byte archive
+with SHA-256 `339e0e56...e055`. The mutually disjoint train/validation/test splits contain
+200/90/120 sequences and 213,995/94,711/129,691 frames. All 410 sampled sequence headers are
+RGB-encoded 640x512 thermal JPEGs. Across the release, 641 present-frame boxes are invalid and
+37 absent frames carry nonzero source boxes. The test-only adapter excludes its 64 invalid
+positive frames, retains all 2,622 negatives according to the canonical existence flag, and
+exports 129,627 images with 127,005 boxes. The manifest and COCO hashes are
+`d5e391ff...0bf9d` and `55b3edfc...0ce3`. The frozen area strata contain 8 tiny
+(`<16 px^2`), 64,082 small, 62,915 medium and zero large positive frames.
+
+Anti-UAV410 is eligible only for external evaluation. It is IR-only, attribute arrays are absent
+from 90 of 120 test sequences, and no frame may enter detector training, generator training or
+curation. The incomplete attributes and source-box anomalies are recorded rather than repaired.

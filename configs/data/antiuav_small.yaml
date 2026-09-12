@@ -1,6 +1,7 @@
 name: antiuav_small
 paired_source_root: ${paths.data_root}/Anti-UAV300
 external_eval_root: ${paths.data_root}/Anti-UAV410
+external_eval_manifest: ${oc.env:AERO_ANTIUAV410_MANIFEST,experiments/antiuav410_test_manifest.json}
 modality: visible_thermal_source__thermal_external
 label_format: antiuav_tracking
 classes: [uav]
