@@ -42,6 +42,10 @@ as external evaluation through the manifest-locked tracking-to-frame-detection a
 validation/test frames or annotations to the generator. Do not claim a non-acquirable-scenario
 coverage result without an independent source for those scenarios.
 
+The audited Anti-UAV300 global RGB-to-IR target-box transform fails its frozen train and held-out
+validation criteria. Anti-UAV300 may therefore support a native-IR detector pilot after invalid
+annotations are filtered, but it is not an aligned paired source for generator training.
+
 ## Label transfer audit (F4)
 
 Labels are carried across the generation step. If generation displaces or deforms object

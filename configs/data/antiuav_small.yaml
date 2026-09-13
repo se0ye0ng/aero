@@ -27,3 +27,4 @@ labels:
     max_centroid_shift_frac: 0.25
     max_area_ratio_change: 0.50
     min_target_contrast: 2.0
+    min_frame_pass_rate: 0.95

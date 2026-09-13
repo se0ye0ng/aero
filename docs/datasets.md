@@ -61,9 +61,14 @@ train/validation/test sequences. Its legacy `test-dev` directory duplicates 100 
 sequences and must not be reported as an independent test set. Across both modalities, 445
 present-frame annotations have zero-area boxes and require recorded exclusion. Visible and IR
 videos also have different resolutions and substantial residual box-centre offsets, so direct
-RGB-to-IR box transfer is prohibited until a calibrated transform is qualified. The corresponding
-train-only RFS pilot uses display-referred 8-bit IR video and is a plumbing diagnostic, not a
-radiometric or downstream-AP result.
+RGB-to-IR box transfer is prohibited. A sequence-balanced robust transform fit only on 141,816
+usable training pairs reaches a joint frame pass rate of 8.82% on train and 14.63% on the 57,982
+held-out validation pairs, against the frozen 95% requirement. Validation median IoU is 0.293 and
+median centroid shift is 0.312 target-box diagonals. Its content-addressed audit is
+`d9575809...5868`; official test metrics are report-only. Target trajectories also provide no
+dense background-registration evidence, so generator training remains prohibited. The
+corresponding train-only RFS pilot uses display-referred 8-bit IR video and is a plumbing
+diagnostic, not a radiometric or downstream-AP result.
 
 ### Local Anti-UAV410 audit (2026-09-12)
 

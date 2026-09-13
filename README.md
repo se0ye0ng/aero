@@ -62,7 +62,7 @@ after it, because an unqualified baseline cannot support later interpretation.
 | [2](#phase-2--the-controlled-experiment-f1-f3) | Pretraining and budget ablations — **the sign-flip test** | | 87 screening |
 | [3](#phase-3--label-audit-and-failure-mode-decomposition-f4-f5) | Label audit, stratified analysis | | 0 |
 | [4](#phase-4--rfs-predictive-power-n1) | Curation, **RFS vs task-aware metric predictive power** | | 30 screening + confirmation |
-| [5](#phase-5--small-target-external-validation-and-sensor-matching) | Sequence-disjoint small-target external validation | 410 external adapter passed; 300 registration on HOLD | 30 screening + confirmation |
+| [5](#phase-5--small-target-external-validation-and-sensor-matching) | Sequence-disjoint small-target external validation | 410 external adapter passed; 300 global registration failed | 30 screening + confirmation |
 | [6](#phase-6--sensor-in-the-loop-generation-n2) | Differentiable sensor in the generation loop | | ~20 |
 | [7](#phase-7--deployment-track) | ONNX / INT8 / latency-vs-mAP | | 0 |
 | [8](#phase-8--radiometrically-consistent-3d-generation-n3) | 3D multi-view IR generation | | TBD |
@@ -78,9 +78,9 @@ it beats the free option.**
 
 ### Current GO / NO-GO gate
 
-As of 2026-09-12:
+As of 2026-09-13:
 
-- **GO:** `make smoke` passes with 83 tests. The data-free pilot separated faithful RFS (0.542)
+- **GO:** `make smoke` passes with 86 tests. The data-free pilot separated faithful RFS (0.542)
   from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
   back-propagated a finite gradient through the sensor chain on CPU and CUDA. On an NVIDIA
   GeForce RTX 4090 with `torch==2.9.0+cu128`, the 10-iteration CUDA fixture measured 1.158 ms
@@ -178,6 +178,15 @@ As of 2026-09-12:
   paired frames, and normalised box-centre residual p95 is 0.160-0.181 by split. Direct visible
   box reuse in IR is invalid until a calibrated transform and residual threshold are frozen.
   `test-dev` duplicates 100 training sequences and is not an independent evaluation split.
+- **HOLD (Anti-UAV300 calibrated transfer):** a sequence-balanced robust affine-center and
+  log-linear-size transform was fit on all 141,816 usable training pairs, then applied unchanged
+  to 57,982 validation pairs. Only 8.82% of training frames and 14.63% of validation frames pass
+  the frozen IoU >= 0.6, centroid shift <= 0.25 target diagonals, area-change <= 0.5 and in-bounds
+  criteria jointly, far below the required 95%. Validation median IoU is 0.293 and median shift
+  is 0.312 target diagonals. The content-addressed audit (`d9575809...5868`) therefore keeps
+  calibrated target-box transfer, dense image registration and generator training on HOLD.
+  Test metrics are report-only and did not fit, select or qualify the transform. Thresholds must
+  not be relaxed after observing this result.
 - **GO (Anti-UAV410 external evaluation only):** the 9,361,681,896-byte source archive is
   CRC-clean under SHA-256 `339e0e56...e055`. Its 200/90/120 train/validation/test sequences are
   mutually disjoint and contain 213,995/94,711/129,691 frames; one sampled header from every
@@ -232,6 +241,7 @@ Class-conditioned RFS aggregation and a frozen undefined-statistic policy remain
 | Train-only analytics16 detector preprocessing | `src/aero_ir/data/preprocess.py` | implemented; 6076-8097 DN window frozen |
 | Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | v1 replay exceeded tolerance; deterministic fix passes an exact twin GPU smoke; clean full v2 baseline and metric replay passed |
 | Anti-UAV300 archive/video/annotation audit | `src/aero_ir/data/antiuav.py`, `scripts/audit_antiuav300.py` | implemented; archive, extraction and timing passed; annotation/registration holds recorded |
+| Anti-UAV300 train-only registration audit | `src/aero_ir/data/antiuav_registration.py`, `scripts/audit_antiuav300_registration.py` | implemented; global target-box calibration failed train and held-out validation gates |
 | Anti-UAV410 external detection adapter | `src/aero_ir/data/antiuav410.py`, `scripts/audit_antiuav410.py`, `scripts/prepare_antiuav410.py` | implemented; local archive/test manifest passed; 64 invalid test positives excluded and counted |
 
 **Exit criterion met.** `make smoke` passes, and the Phase 0 pilot passes on the intended RTX
@@ -414,17 +424,20 @@ evaluation. No validation/test frame, label or paired visible image may enter ge
 training. A genuine non-acquirable-scenario coverage claim is deferred to Phase 8 unless an
 independent source of those scenarios is specified.
 
-The local Anti-UAV300 release is usable for a filtered training-only pilot, not yet for detector
-training. Its official split manifests are sequence-disjoint and temporally paired, but zero-area
-present boxes must be excluded and RGB-to-IR coordinate transfer remains unqualified. The
-display-referred 8-bit MP4 stream is also not a substitute for radiometric DN data. The local
-Anti-UAV410 external-test adapter is ready, but that does not resolve the paired-source hold.
+The local Anti-UAV300 release is usable for a filtered IR-only training pilot, not for paired
+generator training. Its official split manifests are sequence-disjoint and temporally paired,
+but zero-area present boxes must be excluded. A train-fitted global RGB-to-IR box transform fails
+both its training sanity and held-out validation gates, and target trajectories cannot establish
+dense background registration. The display-referred 8-bit MP4 stream is also not a substitute
+for radiometric DN data. The local Anti-UAV410 external-test adapter is ready, but that does not
+resolve the paired-source hold.
 
 **Implement**
 
 | File | What |
 |---|---|
-| `src/aero_ir/data/antiuav.py` | archive, split, annotation and paired-video audit plus deterministic train-only IR sampling are implemented; detector adapter remains pending |
+| `src/aero_ir/data/antiuav.py` | archive, split, annotation and paired-video audit plus deterministic train-only IR sampling are implemented; IR-only detector adapter remains pending |
+| `src/aero_ir/data/antiuav_registration.py` | sequence-balanced robust target-box transform fit on train only and applied unchanged to validation/test; qualification fails |
 | `src/aero_ir/data/antiuav410.py` | audited, content-addressed test-only tracking-to-detection manifest and COCO export; invalid positives are excluded and negatives retained |
 | `src/aero_ir/data/registry.py` | lazy Anti-UAV410 external-test loader preserving `sequence_id`, visibility, attributes and `target_pixel_area_bin`; Anti-UAV300 training remains registration-gated |
 | `src/aero_ir/sensor/fit.py` | `fit_sensor_params()` — NETD from the noise PSD floor (R5), MTF cutoff from the spectrum roll-off (R4), column FPN from the variance ratio (R8), AGC clip points from the histogram (R7) |
@@ -436,6 +449,7 @@ export AERO_ANTIUAV300_ROOT=/path/to/Anti-UAV300
 export AERO_ANTIUAV300_ARCHIVE="$AERO_ANTIUAV300_ROOT/Anti-UAV300.zip"  # recommended
 bash scripts/download_antiuav.sh
 make audit-antiuav300       # writes experiments/antiuav300_data_audit.json
+make audit-antiuav300-registration  # CPU; train fit, validation gate, report-only test
 make pilot-antiuav300-rfs   # train-only; writes experiments/antiuav300_rfs_pilot.json
 
 export AERO_ANTIUAV410_ROOT=/path/to/Anti-UAV410
@@ -443,7 +457,7 @@ export AERO_ANTIUAV410_ARCHIVE="$AERO_ANTIUAV410_ROOT/Anti-UAV410.zip"
 make audit-antiuav410       # CPU; CRC plus every split/label/frame alignment
 make prepare-antiuav410     # CPU; immutable test manifest plus COCO export
 
-# Do not run make e5 yet: the Anti-UAV300 paired-source registration and generator gates remain HOLD.
+# Do not run make e5 yet: Anti-UAV300 failed paired-source registration and generator gates.
 ```
 
 **Exit criterion.** On sequence-disjoint external data, is `dAP > 0`, and does the fitted sensor
@@ -608,6 +622,7 @@ export AERO_ANTIUAV300_ROOT=/mnt/data/Anti-UAV300
 export AERO_ANTIUAV300_ARCHIVE="$AERO_ANTIUAV300_ROOT/Anti-UAV300.zip"
 bash scripts/download_antiuav.sh
 make audit-antiuav300
+make audit-antiuav300-registration
 make pilot-antiuav300-rfs
 
 export AERO_ANTIUAV410_ROOT=/mnt/data/Anti-UAV410
