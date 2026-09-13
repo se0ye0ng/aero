@@ -462,7 +462,7 @@ make audit-antiuav300       # writes experiments/antiuav300_data_audit.json
 make audit-antiuav300-registration  # CPU; train fit, validation gate, report-only test
 make pilot-antiuav300-rfs   # train-only; writes experiments/antiuav300_rfs_pilot.json
 make prepare-antiuav300-ir-yolox  # CPU; uniform native-IR subset + full hash preflight
-bash scripts/run_antiuav300_ir_smoke.sh  # GPU; one epoch, engineering only
+AERO_ANTIUAV300_EPOCHS=20 bash scripts/run_antiuav300_ir_smoke.sh  # GPU sanity run
 
 export AERO_ANTIUAV410_ROOT=/path/to/Anti-UAV410
 export AERO_ANTIUAV410_ARCHIVE="$AERO_ANTIUAV410_ROOT/Anti-UAV410.zip"
@@ -637,7 +637,7 @@ make audit-antiuav300
 make audit-antiuav300-registration
 make pilot-antiuav300-rfs
 make prepare-antiuav300-ir-yolox
-bash scripts/run_antiuav300_ir_smoke.sh  # RTX GPU; does not run E5
+AERO_ANTIUAV300_EPOCHS=20 bash scripts/run_antiuav300_ir_smoke.sh  # does not run E5
 
 export AERO_ANTIUAV410_ROOT=/mnt/data/Anti-UAV410
 export AERO_ANTIUAV410_ARCHIVE="$AERO_ANTIUAV410_ROOT/Anti-UAV410.zip"

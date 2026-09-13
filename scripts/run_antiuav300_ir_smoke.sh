@@ -7,11 +7,20 @@ PREPARED_ROOT="${AERO_ANTIUAV300_IR_PREPARED:-$PROJECT_ROOT/experiments/antiuav3
 OUTPUT_ROOT="${AERO_YOLOX_OUTPUT:-$PROJECT_ROOT/experiments/yolox_runs}"
 RUN_ID="${AERO_ANTIUAV300_RUN_ID:-antiuav300_native_ir_smoke_seed0}"
 RUN_DIR="$OUTPUT_ROOT/$RUN_ID"
+EPOCHS="${AERO_ANTIUAV300_EPOCHS:-1}"
+EVAL_INTERVAL="${AERO_ANTIUAV300_EVAL_INTERVAL:-$EPOCHS}"
+PRINT_INTERVAL="${AERO_ANTIUAV300_PRINT_INTERVAL:-5}"
 
 if [[ ! "$RUN_ID" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
   echo "invalid AERO_ANTIUAV300_RUN_ID: $RUN_ID" >&2
   exit 2
 fi
+for numeric_setting in "$EPOCHS" "$EVAL_INTERVAL" "$PRINT_INTERVAL"; do
+  if [[ ! "$numeric_setting" =~ ^[1-9][0-9]*$ ]]; then
+    echo "epochs, evaluation interval and print interval must be positive integers" >&2
+    exit 2
+  fi
+done
 if [[ ! -x "$PYTHON_BIN" ]]; then
   echo "Python environment is missing or not executable: $PYTHON_BIN" >&2
   exit 2
@@ -37,9 +46,9 @@ COMMON_ENV=(
   PYTHONHASHSEED=0
   AERO_ANTIUAV300_IR_PREPARED="$PREPARED_ROOT"
   AERO_YOLOX_OUTPUT="$OUTPUT_ROOT"
-  AERO_YOLOX_MAX_EPOCHS=1
-  AERO_YOLOX_EVAL_INTERVAL=1
-  AERO_YOLOX_PRINT_INTERVAL=5
+  AERO_YOLOX_MAX_EPOCHS="$EPOCHS"
+  AERO_YOLOX_EVAL_INTERVAL="$EVAL_INTERVAL"
+  AERO_YOLOX_PRINT_INTERVAL="$PRINT_INTERVAL"
   AERO_YOLOX_WORKERS=8
   AERO_YOLOX_SEED=0
   AERO_YOLOX_GRAD_ACCUM=2
@@ -52,7 +61,7 @@ echo "Checking CUDA..."
 "${COMMON_ENV[@]}" "$PYTHON_BIN" -c \
   "import torch; assert torch.cuda.is_available(), 'CUDA unavailable'; print(torch.cuda.get_device_name(0), torch.__version__, torch.version.cuda)"
 
-echo "Starting native-IR engineering smoke: $RUN_ID"
+echo "Starting native-IR engineering run: $RUN_ID ($EPOCHS epochs)"
 "${COMMON_ENV[@]}" "$PYTHON_BIN" -m yolox.tools.train \
   -f "$PROJECT_ROOT/src/aero_ir/detect/yolox_antiuav300_exp.py" \
   -d 1 \
