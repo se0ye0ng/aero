@@ -45,6 +45,9 @@ coverage result without an independent source for those scenarios.
 The audited Anti-UAV300 global RGB-to-IR target-box transform fails its frozen train and held-out
 validation criteria. Anti-UAV300 may therefore support a native-IR detector pilot after invalid
 annotations are filtered, but it is not an aligned paired source for generator training.
+The native-IR engineering adapter implements that pilot with label-independent uniform sampling,
+retained negative frames and recorded invalid-positive exclusions. Its output must not be used as
+evidence that paired generator development or E5 is unblocked.
 
 ## Label transfer audit (F4)
 

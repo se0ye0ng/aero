@@ -48,10 +48,18 @@ def filter_invalid_model_predictions(predictions: list[dict]) -> tuple[list[dict
 class CompleteCOCOEvaluator(COCOEvaluator):
     """Persist evaluator inputs/outputs instead of returning only YOLOX's two AP values."""
 
-    def __init__(self, *args, metrics_path: str | Path, predictions_path: str | Path, **kwargs):
+    def __init__(
+        self,
+        *args,
+        metrics_path: str | Path,
+        predictions_path: str | Path,
+        metrics_kind: str = "flir_yolox_coco_metrics",
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.metrics_path = Path(metrics_path)
         self.predictions_path = Path(predictions_path)
+        self.metrics_kind = metrics_kind
 
     def evaluate_prediction(self, data_dict, statistics):
         if not is_main_process():
@@ -70,7 +78,7 @@ class CompleteCOCOEvaluator(COCOEvaluator):
         denominator = n_samples * int(self.dataloader.batch_size)
         payload = {
             "schema_version": 1,
-            "kind": "flir_yolox_coco_metrics",
+            "kind": self.metrics_kind,
             "status": "pass",
             **metrics,
             "prediction_filter": prediction_filter,

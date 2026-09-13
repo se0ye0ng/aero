@@ -187,6 +187,14 @@ As of 2026-09-13:
   calibrated target-box transfer, dense image registration and generator training on HOLD.
   Test metrics are report-only and did not fit, select or qualify the transform. Thresholds must
   not be relaxed after observing this result.
+- **GO (Anti-UAV300 native-IR detector engineering smoke only):** the registration-independent
+  adapter selects an endpoint-inclusive uniform grid before inspecting labels: eight frames from
+  each of 160 training sequences and four from each of 67 validation sequences. It retains
+  1,279/266 train/validation images with 1,266/257 boxes and 13/9 true negatives, while excluding
+  and counting 1/2 selected zero-extent positives. All decoded 640x512 uint8 PNGs, source-label
+  selections and COCO exports verify under manifest `c50c5df6...2f86fa`; the pinned YOLOX-s CPU
+  model/data preflight passes with 8,937,682 parameters. This is pipeline validation only. It
+  neither accesses test data nor clears the failed paired registration and generator gates.
 - **GO (Anti-UAV410 external evaluation only):** the 9,361,681,896-byte source archive is
   CRC-clean under SHA-256 `339e0e56...e055`. Its 200/90/120 train/validation/test sequences are
   mutually disjoint and contain 213,995/94,711/129,691 frames; one sampled header from every
@@ -242,6 +250,7 @@ Class-conditioned RFS aggregation and a frozen undefined-statistic policy remain
 | Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | v1 replay exceeded tolerance; deterministic fix passes an exact twin GPU smoke; clean full v2 baseline and metric replay passed |
 | Anti-UAV300 archive/video/annotation audit | `src/aero_ir/data/antiuav.py`, `scripts/audit_antiuav300.py` | implemented; archive, extraction and timing passed; annotation/registration holds recorded |
 | Anti-UAV300 train-only registration audit | `src/aero_ir/data/antiuav_registration.py`, `scripts/audit_antiuav300_registration.py` | implemented; global target-box calibration failed train and held-out validation gates |
+| Anti-UAV300 native-IR YOLOX smoke adapter | `src/aero_ir/data/antiuav300_ir.py`, `src/aero_ir/detect/yolox_antiuav300_exp.py` | CPU preparation/preflight passed; GPU engineering smoke pending |
 | Anti-UAV410 external detection adapter | `src/aero_ir/data/antiuav410.py`, `scripts/audit_antiuav410.py`, `scripts/prepare_antiuav410.py` | implemented; local archive/test manifest passed; 64 invalid test positives excluded and counted |
 
 **Exit criterion met.** `make smoke` passes, and the Phase 0 pilot passes on the intended RTX
@@ -436,8 +445,9 @@ resolve the paired-source hold.
 
 | File | What |
 |---|---|
-| `src/aero_ir/data/antiuav.py` | archive, split, annotation and paired-video audit plus deterministic train-only IR sampling are implemented; IR-only detector adapter remains pending |
+| `src/aero_ir/data/antiuav.py`, `antiuav300_ir.py` | archive/split audit plus manifest-locked native-IR smoke preparation; label-independent sampling, invalid-positive exclusion and negative retention are implemented |
 | `src/aero_ir/data/antiuav_registration.py` | sequence-balanced robust target-box transform fit on train only and applied unchanged to validation/test; qualification fails |
+| `src/aero_ir/detect/antiuav300_yolox.py`, `yolox_antiuav300_exp.py` | one-class prepared-PNG loader and deterministic YOLOX-s engineering smoke; no paired RGB input is used |
 | `src/aero_ir/data/antiuav410.py` | audited, content-addressed test-only tracking-to-detection manifest and COCO export; invalid positives are excluded and negatives retained |
 | `src/aero_ir/data/registry.py` | lazy Anti-UAV410 external-test loader preserving `sequence_id`, visibility, attributes and `target_pixel_area_bin`; Anti-UAV300 training remains registration-gated |
 | `src/aero_ir/sensor/fit.py` | `fit_sensor_params()` — NETD from the noise PSD floor (R5), MTF cutoff from the spectrum roll-off (R4), column FPN from the variance ratio (R8), AGC clip points from the histogram (R7) |
@@ -451,6 +461,8 @@ bash scripts/download_antiuav.sh
 make audit-antiuav300       # writes experiments/antiuav300_data_audit.json
 make audit-antiuav300-registration  # CPU; train fit, validation gate, report-only test
 make pilot-antiuav300-rfs   # train-only; writes experiments/antiuav300_rfs_pilot.json
+make prepare-antiuav300-ir-yolox  # CPU; uniform native-IR subset + full hash preflight
+bash scripts/run_antiuav300_ir_smoke.sh  # GPU; one epoch, engineering only
 
 export AERO_ANTIUAV410_ROOT=/path/to/Anti-UAV410
 export AERO_ANTIUAV410_ARCHIVE="$AERO_ANTIUAV410_ROOT/Anti-UAV410.zip"
@@ -624,6 +636,8 @@ bash scripts/download_antiuav.sh
 make audit-antiuav300
 make audit-antiuav300-registration
 make pilot-antiuav300-rfs
+make prepare-antiuav300-ir-yolox
+bash scripts/run_antiuav300_ir_smoke.sh  # RTX GPU; does not run E5
 
 export AERO_ANTIUAV410_ROOT=/mnt/data/Anti-UAV410
 export AERO_ANTIUAV410_ARCHIVE="$AERO_ANTIUAV410_ROOT/Anti-UAV410.zip"

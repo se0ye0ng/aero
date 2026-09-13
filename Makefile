@@ -1,4 +1,4 @@
-.PHONY: setup smoke lint test pilot-phase0 audit-flir manifest-flir manifest-flir-pairs preprocess-flir prepare-flir-yolox record-flir-yolox-smoke prepare-flir-yolox-timing run-flir-yolox pilot-flir-rfs audit-antiuav300 audit-antiuav300-registration pilot-antiuav300-rfs audit-antiuav410 prepare-antiuav410 data-flir data-antiuav e1 e2 e3 e4 e5 e6 report deploy-bench verify replay clean
+.PHONY: setup smoke lint test pilot-phase0 audit-flir manifest-flir manifest-flir-pairs preprocess-flir prepare-flir-yolox record-flir-yolox-smoke prepare-flir-yolox-timing run-flir-yolox pilot-flir-rfs audit-antiuav300 audit-antiuav300-registration prepare-antiuav300-ir-yolox pilot-antiuav300-rfs audit-antiuav410 prepare-antiuav410 data-flir data-antiuav e1 e2 e3 e4 e5 e6 report deploy-bench verify replay clean
 
 PY ?= python3
 FLIR_ARCHIVE_ARG = $(if $(AERO_FLIR_ARCHIVE),--archive "$(AERO_FLIR_ARCHIVE)")
@@ -74,6 +74,11 @@ audit-antiuav300:
 audit-antiuav300-registration:
 	@test -n "$(AERO_ANTIUAV300_ROOT)" || { echo "set AERO_ANTIUAV300_ROOT" >&2; exit 2; }
 	PYTHONPATH=src $(PY) scripts/audit_antiuav300_registration.py \
+		--root "$(AERO_ANTIUAV300_ROOT)"
+
+prepare-antiuav300-ir-yolox:
+	@test -n "$(AERO_ANTIUAV300_ROOT)" || { echo "set AERO_ANTIUAV300_ROOT" >&2; exit 2; }
+	PYTHONPATH=src $(PY) scripts/prepare_antiuav300_ir_yolox.py \
 		--root "$(AERO_ANTIUAV300_ROOT)"
 
 pilot-antiuav300-rfs:

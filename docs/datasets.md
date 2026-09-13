@@ -70,6 +70,15 @@ dense background-registration evidence, so generator training remains prohibited
 corresponding train-only RFS pilot uses display-referred 8-bit IR video and is a plumbing
 diagnostic, not a radiometric or downstream-AP result.
 
+The registration-independent detector smoke uses only native IR frames. An endpoint-inclusive,
+label-independent grid selects 8 frames per training sequence and 4 per validation sequence;
+test is never accessed. The prepared manifest `c50c5df6...2f86fa` contains 1,279 training images
+with 1,266 boxes and 13 negatives, plus 266 validation images with 257 boxes and 9 negatives.
+One selected training positive and two selected validation positives have zero extent and are
+excluded with explicit counts. Every decoded lossless PNG and both COCO files are hashed. This
+qualifies a YOLOX engineering smoke only and supplies no evidence for cross-modal registration,
+generator training, or Phase 5 scientific claims.
+
 ### Local Anti-UAV410 audit (2026-09-12)
 
 `make audit-antiuav410` binds the extracted release to a CRC-clean 9,361,681,896-byte archive

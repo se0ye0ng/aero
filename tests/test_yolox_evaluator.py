@@ -44,6 +44,7 @@ def test_complete_evaluator_persists_predictions_and_metrics(tmp_path):
         num_classes=1,
         metrics_path=metrics_path,
         predictions_path=predictions_path,
+        metrics_kind="test_target_metrics",
     )
     predictions = [{"image_id": 1, "category_id": 7, "bbox": [2, 3, 8, 6], "score": 0.99}]
 
@@ -56,6 +57,7 @@ def test_complete_evaluator_persists_predictions_and_metrics(tmp_path):
     assert ap == pytest.approx(1.0)
     assert ap50 == pytest.approx(1.0)
     assert payload["mar_50"] == pytest.approx(1.0)
+    assert payload["kind"] == "test_target_metrics"
     assert payload["per_class"]["target"]["ap_50_95"] == pytest.approx(1.0)
     assert payload["timing"]["inference_ms_per_image"] == pytest.approx(150.0)
     assert payload["predictions"]["sha256"] == file_sha256(predictions_path)
