@@ -101,6 +101,7 @@ reports a three-arm controlled curve under stated conditions.
 | Key | Work | Used for |
 |---|---|---|
 | `yolox` | YOLOX. [official code](https://github.com/Megvii-BaseDetection/YOLOX) | detector; pin a revision and record every recipe override |
+| `superfusion2022` | SuperFusion: A Versatile Image Registration and Fusion Network with Semantic Awareness. [paper](https://www.ieee-jas.net/article/doi/10.1109/JAS.2022.106082) · [official code](https://github.com/Linfeng-Tang/SuperFusion) | frozen image-conditioned RGB/IR dense-registration baseline; vendored matcher code retains MIT attribution |
 | `flir-adas-v2` | Teledyne FLIR ADAS Thermal Dataset v2. [official access page](https://oem.flir.com/en-gb/solutions/automotive/adas-dataset-form/) | IR protocol-transfer domain; visible/thermal pairing requires an audited manifest |
 | `llvip` | LLVIP aligned visible-infrared pairs. [arXiv:2108.10831](https://arxiv.org/abs/2108.10831) | optional domain |
 | `dronevehicle` | DroneVehicle aerial RGB-IR detection. [arXiv:2003.02437](https://arxiv.org/abs/2003.02437) | optional domain |

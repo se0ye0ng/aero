@@ -70,6 +70,15 @@ dense background-registration evidence, so generator training remains prohibited
 corresponding train-only RFS pilot uses display-referred 8-bit IR video and is a plumbing
 diagnostic, not a radiometric or downstream-AP result.
 
+The replacement dense-registration audit initializes from the public SuperFusion RoadScene
+checkpoint, then fine-tunes for 300 epochs on a frozen sequence-balanced cache containing 16
+pairs from each official training sequence. Validation/test are not opened during fitting. The
+audit transforms visible boxes by sub-pixel inversion of the predicted target-to-source flow
+and separately measures flow coverage and cross-modal edge-NCC gain. A sequence-balanced screen
+is explicitly incapable of clearing the gate; only an exhaustive train/held-out-validation
+report can do so. The official test split remains report-only. This qualification is pending,
+so the generator-training hold is unchanged.
+
 The registration-independent detector smoke uses only native IR frames. An endpoint-inclusive,
 label-independent grid selects 8 frames per training sequence and 4 per validation sequence;
 test is never accessed. The prepared manifest `c50c5df6...2f86fa` contains 1,279 training images

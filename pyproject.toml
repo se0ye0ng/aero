@@ -25,6 +25,7 @@ dependencies = [
 torch = ["torch>=2.2", "torchvision>=0.17"]
 track = ["wandb>=0.16", "dvc>=3.0"]
 detect = ["pycocotools>=2.0.7", "opencv-python-headless>=4.9"]
+registration = ["kornia==0.6.5"]
 deploy = ["onnx>=1.15", "onnxruntime>=1.17"]
 dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.6"]
 

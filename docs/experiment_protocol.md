@@ -45,6 +45,11 @@ coverage result without an independent source for those scenarios.
 The audited Anti-UAV300 global RGB-to-IR target-box transform fails its frozen train and held-out
 validation criteria. Anti-UAV300 may therefore support a native-IR detector pilot after invalid
 annotations are filtered, but it is not an aligned paired source for generator training.
+An image-conditioned SuperFusion DenseMatcher qualification is implemented as the corrective
+path. Its public checkpoint initializes a fixed 300-epoch fit using only a sequence-balanced
+cache from the official training split. It must then pass the original 95% box-transfer
+threshold plus fixed flow-validity and edge-alignment criteria on held-out validation before
+paired generator training is permitted.
 The native-IR engineering adapter implements that pilot with label-independent uniform sampling,
 retained negative frames and recorded invalid-positive exclusions. Its output must not be used as
 evidence that paired generator development or E5 is unblocked.
