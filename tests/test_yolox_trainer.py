@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import torch
 
+from aero_ir.detect.yolox_antiuav300_exp import Exp as AntiUAV300Exp
 from aero_ir.detect.yolox_flir_exp import (
     Exp,
     deterministic_worker_init,
@@ -65,6 +66,42 @@ def test_flir_exp_rejects_newline_in_dataset_root(monkeypatch):
 
     with pytest.raises(ValueError, match="contains a newline"):
         Exp()
+
+
+def test_antiuav300_standard_profile_restores_full_yolox_schedule(tmp_path, monkeypatch):
+    monkeypatch.setenv("AERO_ANTIUAV300_IR_PREPARED", str(tmp_path))
+    monkeypatch.setenv("AERO_ANTIUAV300_TRAINING_PROFILE", "standard")
+    monkeypatch.setenv("AERO_YOLOX_MAX_EPOCHS", "300")
+    monkeypatch.setenv("AERO_YOLOX_GRAD_ACCUM", "2")
+    monkeypatch.setenv("AERO_YOLOX_EFFECTIVE_BATCH", "64")
+    exp = AntiUAV300Exp()
+    scheduler = exp.get_lr_scheduler(lr=-1.0, iters_per_epoch=40)
+
+    assert exp.warmup_epochs == 5
+    assert exp.no_aug_epochs == 15
+    assert scheduler.iters_per_epoch == 20
+    assert scheduler.total_iters == 6000
+    assert scheduler.update_lr(1) == pytest.approx(1e-6)
+    assert scheduler.update_lr(100) == pytest.approx(0.01)
+    assert scheduler.update_lr(5700) == pytest.approx(0.0005)
+
+
+@pytest.mark.parametrize(
+    ("profile", "epochs", "message"),
+    [
+        ("smoke", "20", "requires exactly one epoch"),
+        ("standard", "20", "requires more than 20 epochs"),
+    ],
+)
+def test_antiuav300_profiles_reject_invalid_epoch_ranges(
+    tmp_path, monkeypatch, profile, epochs, message
+):
+    monkeypatch.setenv("AERO_ANTIUAV300_IR_PREPARED", str(tmp_path))
+    monkeypatch.setenv("AERO_ANTIUAV300_TRAINING_PROFILE", profile)
+    monkeypatch.setenv("AERO_YOLOX_MAX_EPOCHS", epochs)
+
+    with pytest.raises(ValueError, match=message):
+        AntiUAV300Exp()
 
 
 def test_worker_augmentation_seed_is_repeatable_and_worker_specific():

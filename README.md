@@ -78,9 +78,9 @@ it beats the free option.**
 
 ### Current GO / NO-GO gate
 
-As of 2026-09-13:
+As of 2026-09-14:
 
-- **GO:** `make smoke` passes with 86 tests. The data-free pilot separated faithful RFS (0.542)
+- **GO:** `make smoke` passes with 92 tests. The data-free pilot separated faithful RFS (0.542)
   from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
   back-propagated a finite gradient through the sensor chain on CPU and CUDA. On an NVIDIA
   GeForce RTX 4090 with `torch==2.9.0+cu128`, the 10-iteration CUDA fixture measured 1.158 ms
@@ -195,6 +195,15 @@ As of 2026-09-13:
   selections and COCO exports verify under manifest `c50c5df6...2f86fa`; the pinned YOLOX-s CPU
   model/data preflight passes with 8,937,682 parameters. This is pipeline validation only. It
   neither accesses test data nor clears the failed paired registration and generator gates.
+- **GO (Anti-UAV300 native-IR schedule diagnosis):** the one-epoch GPU smoke passed, and a
+  20-epoch diagnostic reached final mAP@0.5:0.95 0.46225, mAP@0.5 0.94987,
+  mAR@0.5:0.95 0.53385 and mAR@0.5 0.96498 on the frozen 266-image validation subset. That
+  diagnostic is not a standard-training result: the former smoke-derived configuration disabled
+  warmup and placed every epoch in YOLOX's final no-augmentation phase. Explicit profiles now
+  prevent that error. `smoke` permits exactly one epoch; `standard` requires more than 20 epochs
+  and fixes five warmup plus 15 final no-augmentation epochs. For the frozen 1,279-image training
+  subset, the guarded 300-epoch configuration resolves to 6,000 optimizer updates. Its full GPU
+  result is pending and remains a native-IR subset experiment, not the blocked paired E5 study.
 - **GO (Anti-UAV410 external evaluation only):** the 9,361,681,896-byte source archive is
   CRC-clean under SHA-256 `339e0e56...e055`. Its 200/90/120 train/validation/test sequences are
   mutually disjoint and contain 213,995/94,711/129,691 frames; one sampled header from every
@@ -250,7 +259,7 @@ Class-conditioned RFS aggregation and a frozen undefined-statistic policy remain
 | Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | v1 replay exceeded tolerance; deterministic fix passes an exact twin GPU smoke; clean full v2 baseline and metric replay passed |
 | Anti-UAV300 archive/video/annotation audit | `src/aero_ir/data/antiuav.py`, `scripts/audit_antiuav300.py` | implemented; archive, extraction and timing passed; annotation/registration holds recorded |
 | Anti-UAV300 train-only registration audit | `src/aero_ir/data/antiuav_registration.py`, `scripts/audit_antiuav300_registration.py` | implemented; global target-box calibration failed train and held-out validation gates |
-| Anti-UAV300 native-IR YOLOX smoke adapter | `src/aero_ir/data/antiuav300_ir.py`, `src/aero_ir/detect/yolox_antiuav300_exp.py` | CPU preparation/preflight passed; GPU engineering smoke pending |
+| Anti-UAV300 native-IR YOLOX adapter | `src/aero_ir/data/antiuav300_ir.py`, `src/aero_ir/detect/yolox_antiuav300_exp.py` | smoke and 20-epoch diagnostic passed; corrected 300-epoch standard schedule CPU-verified, GPU run pending |
 | Anti-UAV410 external detection adapter | `src/aero_ir/data/antiuav410.py`, `scripts/audit_antiuav410.py`, `scripts/prepare_antiuav410.py` | implemented; local archive/test manifest passed; 64 invalid test positives excluded and counted |
 
 **Exit criterion met.** `make smoke` passes, and the Phase 0 pilot passes on the intended RTX
@@ -447,7 +456,7 @@ resolve the paired-source hold.
 |---|---|
 | `src/aero_ir/data/antiuav.py`, `antiuav300_ir.py` | archive/split audit plus manifest-locked native-IR smoke preparation; label-independent sampling, invalid-positive exclusion and negative retention are implemented |
 | `src/aero_ir/data/antiuav_registration.py` | sequence-balanced robust target-box transform fit on train only and applied unchanged to validation/test; qualification fails |
-| `src/aero_ir/detect/antiuav300_yolox.py`, `yolox_antiuav300_exp.py` | one-class prepared-PNG loader and deterministic YOLOX-s engineering smoke; no paired RGB input is used |
+| `src/aero_ir/detect/antiuav300_yolox.py`, `yolox_antiuav300_exp.py` | one-class prepared-PNG loader and deterministic YOLOX-s smoke/standard profiles; no paired RGB input is used |
 | `src/aero_ir/data/antiuav410.py` | audited, content-addressed test-only tracking-to-detection manifest and COCO export; invalid positives are excluded and negatives retained |
 | `src/aero_ir/data/registry.py` | lazy Anti-UAV410 external-test loader preserving `sequence_id`, visibility, attributes and `target_pixel_area_bin`; Anti-UAV300 training remains registration-gated |
 | `src/aero_ir/sensor/fit.py` | `fit_sensor_params()` — NETD from the noise PSD floor (R5), MTF cutoff from the spectrum roll-off (R4), column FPN from the variance ratio (R8), AGC clip points from the histogram (R7) |
@@ -462,7 +471,11 @@ make audit-antiuav300       # writes experiments/antiuav300_data_audit.json
 make audit-antiuav300-registration  # CPU; train fit, validation gate, report-only test
 make pilot-antiuav300-rfs   # train-only; writes experiments/antiuav300_rfs_pilot.json
 make prepare-antiuav300-ir-yolox  # CPU; uniform native-IR subset + full hash preflight
-AERO_ANTIUAV300_EPOCHS=20 bash scripts/run_antiuav300_ir_smoke.sh  # GPU sanity run
+AERO_ANTIUAV300_RUN_ID=antiuav300_native_ir_standard_seed0_e300_v1 \
+  AERO_ANTIUAV300_EPOCHS=300 \
+  AERO_ANTIUAV300_TRAINING_PROFILE=standard \
+  AERO_ANTIUAV300_EVAL_INTERVAL=10 \
+  bash scripts/run_antiuav300_ir.sh  # GPU; requires a clean Git checkout
 
 export AERO_ANTIUAV410_ROOT=/path/to/Anti-UAV410
 export AERO_ANTIUAV410_ARCHIVE="$AERO_ANTIUAV410_ROOT/Anti-UAV410.zip"
@@ -637,7 +650,11 @@ make audit-antiuav300
 make audit-antiuav300-registration
 make pilot-antiuav300-rfs
 make prepare-antiuav300-ir-yolox
-AERO_ANTIUAV300_EPOCHS=20 bash scripts/run_antiuav300_ir_smoke.sh  # does not run E5
+AERO_ANTIUAV300_RUN_ID=antiuav300_native_ir_standard_seed0_e300_v1 \
+  AERO_ANTIUAV300_EPOCHS=300 \
+  AERO_ANTIUAV300_TRAINING_PROFILE=standard \
+  AERO_ANTIUAV300_EVAL_INTERVAL=10 \
+  bash scripts/run_antiuav300_ir.sh  # native-IR subset only; does not run E5
 
 export AERO_ANTIUAV410_ROOT=/mnt/data/Anti-UAV410
 export AERO_ANTIUAV410_ARCHIVE="$AERO_ANTIUAV410_ROOT/Anti-UAV410.zip"

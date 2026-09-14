@@ -1,4 +1,4 @@
-"""Pinned YOLOX-s engineering experiment for prepared Anti-UAV300 native IR."""
+"""Pinned YOLOX-s experiment for prepared Anti-UAV300 native IR."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from aero_ir.detect.yolox_trainer import AccumulatingTrainer
 
 
 class Exp(YOLOXExp):
-    """YOLOX-s with a one-class, native-IR, engineering-only data contract."""
+    """YOLOX-s with explicit smoke and standard-training schedule profiles."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -38,8 +38,19 @@ class Exp(YOLOXExp):
         self.test_size = (640, 640)
         self.data_num_workers = int(os.environ.get("AERO_YOLOX_WORKERS", "4"))
         self.max_epoch = int(os.environ.get("AERO_YOLOX_MAX_EPOCHS", "1"))
-        self.warmup_epochs = 0
-        self.no_aug_epochs = self.max_epoch
+        self.training_profile = os.environ.get("AERO_ANTIUAV300_TRAINING_PROFILE", "smoke")
+        if self.training_profile == "smoke":
+            if self.max_epoch != 1:
+                raise ValueError("Anti-UAV300 smoke profile requires exactly one epoch")
+            self.warmup_epochs = 0
+            self.no_aug_epochs = 1
+        elif self.training_profile == "standard":
+            if self.max_epoch <= 20:
+                raise ValueError("Anti-UAV300 standard profile requires more than 20 epochs")
+            self.warmup_epochs = 5
+            self.no_aug_epochs = 15
+        else:
+            raise ValueError("AERO_ANTIUAV300_TRAINING_PROFILE must be smoke or standard")
         self.eval_interval = int(os.environ.get("AERO_YOLOX_EVAL_INTERVAL", "1"))
         self.print_interval = int(os.environ.get("AERO_YOLOX_PRINT_INTERVAL", "10"))
         self.save_history_ckpt = False
@@ -137,7 +148,7 @@ class Exp(YOLOXExp):
 
     def get_eval_loader(self, batch_size, is_distributed, testdev=False, legacy=False):
         if testdev:
-            raise ValueError("test split is prohibited for the native-IR engineering smoke")
+            raise ValueError("test split is prohibited for Anti-UAV300 detector development")
         dataset = self._dataset(self.val_ann, ValTransform(legacy=legacy))
         if is_distributed:
             batch_size //= dist.get_world_size()
@@ -156,7 +167,7 @@ class Exp(YOLOXExp):
         metrics_path = os.environ.get("AERO_YOLOX_METRICS_PATH")
         predictions_path = os.environ.get("AERO_YOLOX_PREDICTIONS_PATH")
         if not metrics_path or not predictions_path:
-            raise ValueError("Anti-UAV300 smoke requires metrics and predictions paths")
+            raise ValueError("Anti-UAV300 training requires metrics and predictions paths")
         val_loader = self.get_eval_loader(batch_size, is_distributed, testdev, legacy)
         return CompleteCOCOEvaluator(
             dataloader=val_loader,
