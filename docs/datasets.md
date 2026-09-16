@@ -76,8 +76,11 @@ pairs from each official training sequence. Validation/test are not opened durin
 audit transforms visible boxes by sub-pixel inversion of the predicted target-to-source flow
 and separately measures flow coverage and cross-modal edge-NCC gain. A sequence-balanced screen
 is explicitly incapable of clearing the gate; only an exhaustive train/held-out-validation
-report can do so. The official test split remains report-only. This qualification is pending,
-so the generator-training hold is unchanged.
+report can do so. The 300-epoch checkpoint was produced, but the frozen screen failed: 74.22%
+of 1,280 training pairs and 67.54% of 536 validation pairs passed the joint box criteria,
+against the required 95%. The exhaustive audit was not run, and the official test split remains
+report-only. The generator-training hold is unchanged. The existing checkpoint and screen are
+immutable; a redesign must be registered as a distinct protocol rather than replacing this result.
 
 The registration-independent detector smoke uses only native IR frames. An endpoint-inclusive,
 label-independent grid selects 8 frames per training sequence and 4 per validation sequence;

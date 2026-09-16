@@ -54,6 +54,31 @@ The native-IR engineering adapter implements that pilot with label-independent u
 retained negative frames and recorded invalid-positive exclusions. Its output must not be used as
 evidence that paired generator development or E5 is unblocked.
 
+#### Anti-UAV300 registration protocol v2 (frozen 2026-09-16 before execution)
+
+Protocol v1 completed 300 epochs but failed its unchanged sequence-balanced screen (74.22% train,
+67.54% validation joint box pass versus 95%). Its checkpoint, report and thresholds remain
+immutable. Protocol v2 is a distinct train-only intervention, not a replay or threshold change:
+
+- initialize from the train-only v1 checkpoint `a4c8aafe...2388a`;
+- cache all 141,816 usable official training pairs, without opening validation or test;
+- draw 16 pairs per training sequence per epoch from deterministic rotating permutations, so all
+  pairs in even the largest sequence are seen within 63 epochs, while retaining sequence balance;
+- retain 300 epochs, batch 16, 160 steps/epoch and 48,000 optimizer steps;
+- make differentiable box IoU, centroid error, log-area error and worst perimeter error the
+  primary geometry loss; retain low-weight cross-modal edge structure, smoothness, fold and
+  boundary regularizers;
+- apply the original v1 screen and exhaustive thresholds unchanged. The 8-pair-per-sequence
+  train/validation screen must pass before the 199,798-pair exhaustive train/validation test runs.
+
+The design is informed by RIFT's radiation-insensitive structural matching, NeMAR's
+geometry-preservation principle, XoFTR's visible/TIR-specific sub-pixel matching, RoMa's robust
+coarse-to-fine dense correspondence, C2RF's cross-modal commonality mining, and the existing
+SuperFusion matcher. Those papers motivate components; they do not constitute evidence that v2
+passes Anti-UAV300. Because v1 aggregate validation performance was already observed before v2
+was designed, a v2 pass qualifies this engineering gate but is not a pristine independent
+confirmation of the research claim. External paired replication remains required for that claim.
+
 ## Label transfer audit (F4)
 
 Labels are carried across the generation step. If generation displaces or deforms object

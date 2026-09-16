@@ -1,5 +1,8 @@
+import json
+
 import torch
 
+from aero_ir.utils.manifest import canonical_hash, file_sha256
 from scripts.audit_antiuav300_dense_registration import (
     CHECKPOINT_SHA256,
     _balanced_indices,
@@ -7,6 +10,7 @@ from scripts.audit_antiuav300_dense_registration import (
     _gate_report,
     _split_report,
 )
+from scripts.check_antiuav300_registration_report import check_report
 from scripts.train_antiuav300_registration import _registration_loss
 
 
@@ -88,6 +92,33 @@ def test_finetuned_checkpoint_provenance_rejects_validation_access(tmp_path):
         raise AssertionError("validation-contaminated checkpoint was accepted")
 
 
+def test_geometry_first_v2_checkpoint_provenance_is_distinct(tmp_path):
+    metadata = {
+        "schema_version": 2,
+        "kind": "antiuav300_train_only_geometry_first_v2",
+        "dataset": "Anti-UAV300",
+        "fit_split": "train",
+        "validation_or_test_access": "none",
+        "initial_checkpoint_sha256": (
+            "a4c8aafe95c098f8b0803980be520aae12122c95f0ed89bddcb5c89305f2388a"
+        ),
+        "cache_manifest_sha256": "d" * 64,
+        "epochs": 300,
+        "pairs_per_sequence_per_epoch": 16,
+        "unique_train_pairs": 141816,
+        "batch_size": 16,
+        "precision": "float32",
+        "seed": 0,
+    }
+    checkpoint = tmp_path / "v2.pth"
+    torch.save({"aero_registration": metadata}, checkpoint)
+
+    provenance = _checkpoint_provenance(checkpoint, "e" * 64)
+
+    assert provenance["checkpoint_variant"] == "Anti-UAV300_train_only_geometry_first_v2"
+    assert provenance["anti_uav_fitting"] == "official train split only"
+
+
 def test_registration_training_loss_has_finite_flow_gradients():
     visible = torch.rand(2, 3, 256, 256)
     infrared = visible.clone()
@@ -101,3 +132,65 @@ def test_registration_training_loss_has_finite_flow_gradients():
     assert all(torch.isfinite(torch.tensor(value)) for value in values.values())
     assert displacement.grad is not None
     assert torch.isfinite(displacement.grad).all()
+
+
+def test_existing_registration_report_is_verified_and_hold_is_preserved(tmp_path):
+    checkpoint = tmp_path / "matcher.pth"
+    torch.save({"DM": {}}, checkpoint)
+    report = {
+        "kind": "antiuav300_superfusion_dense_registration_audit",
+        "root": str(tmp_path.resolve()),
+        "data_usage": {"frame_selection": "8 endpoint-inclusive usable pairs per sequence"},
+        "model": {"checkpoint_sha256": file_sha256(checkpoint)},
+        "metrics": {
+            "train": {"frame_pass_rate": {"joint": 0.74}},
+            "val": {"frame_pass_rate": {"joint": 0.67}},
+        },
+    }
+    report["gates"] = _gate_report(report["metrics"], exhaustive=False)
+    report["dense_registration_audit_sha256"] = canonical_hash(report)
+    report_path = tmp_path / "screen.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    passed, message = check_report(report_path, checkpoint, tmp_path, "screen")
+
+    assert not passed
+    assert "HOLD" in message
+    assert "74.00%" in message
+    report["metrics"]["val"]["frame_pass_rate"]["joint"] = 0.96
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    try:
+        check_report(report_path, checkpoint, tmp_path, "screen")
+    except ValueError as error:
+        assert "content hash mismatch" in str(error)
+    else:
+        raise AssertionError("modified registration result was accepted")
+
+
+def test_existing_exhaustive_registration_pass_requires_matching_checkpoint(tmp_path):
+    checkpoint = tmp_path / "matcher.pth"
+    torch.save({"DM": {}}, checkpoint)
+    metrics = {split: _split_report(_passing_rows()) for split in ("train", "val")}
+    report = {
+        "kind": "antiuav300_superfusion_dense_registration_audit",
+        "root": str(tmp_path.resolve()),
+        "data_usage": {"frame_selection": "all usable paired target frames"},
+        "model": {"checkpoint_sha256": file_sha256(checkpoint)},
+        "metrics": metrics,
+        "gates": _gate_report(metrics, exhaustive=True),
+    }
+    report["dense_registration_audit_sha256"] = canonical_hash(report)
+    report_path = tmp_path / "full.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    passed, message = check_report(report_path, checkpoint, tmp_path, "full")
+
+    assert passed
+    assert "PASS" in message
+    torch.save({"DM": {"modified": torch.zeros(1)}}, checkpoint)
+    try:
+        check_report(report_path, checkpoint, tmp_path, "full")
+    except ValueError as error:
+        assert "different checkpoint" in str(error)
+    else:
+        raise AssertionError("registration result accepted a different checkpoint")

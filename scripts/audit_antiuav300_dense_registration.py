@@ -509,7 +509,7 @@ def _checkpoint_provenance(checkpoint: Path, checkpoint_sha256: str) -> dict:
     metadata = payload.get("aero_registration") if isinstance(payload, dict) else None
     if not isinstance(metadata, dict):
         raise ValueError("unrecognized dense-registration checkpoint")
-    required = {
+    v1_required = {
         "kind": "antiuav300_train_only_superfusion_finetune",
         "dataset": "Anti-UAV300",
         "fit_split": "train",
@@ -519,12 +519,34 @@ def _checkpoint_provenance(checkpoint: Path, checkpoint_sha256: str) -> dict:
         "precision": "float32",
         "seed": 0,
     }
-    if any(metadata.get(key) != value for key, value in required.items()):
+    v2_required = {
+        "schema_version": 2,
+        "kind": "antiuav300_train_only_geometry_first_v2",
+        "dataset": "Anti-UAV300",
+        "fit_split": "train",
+        "validation_or_test_access": "none",
+        "initial_checkpoint_sha256": (
+            "a4c8aafe95c098f8b0803980be520aae12122c95f0ed89bddcb5c89305f2388a"
+        ),
+        "epochs": 300,
+        "pairs_per_sequence_per_epoch": 16,
+        "unique_train_pairs": 141816,
+        "batch_size": 16,
+        "precision": "float32",
+        "seed": 0,
+    }
+    is_v1 = all(metadata.get(key) == value for key, value in v1_required.items())
+    is_v2 = all(metadata.get(key) == value for key, value in v2_required.items())
+    if not is_v1 and not is_v2:
         raise ValueError("fine-tuned registration checkpoint violates the frozen protocol")
     if not isinstance(metadata.get("cache_manifest_sha256"), str):
         raise ValueError("fine-tuned registration checkpoint has no cache provenance")
     return {
-        "checkpoint_variant": "Anti-UAV300_train_only_finetune",
+        "checkpoint_variant": (
+            "Anti-UAV300_train_only_geometry_first_v2"
+            if is_v2
+            else "Anti-UAV300_train_only_finetune_v1"
+        ),
         "checkpoint_sha256": checkpoint_sha256,
         "anti_uav_fitting": "official train split only",
         "training_metadata": metadata,

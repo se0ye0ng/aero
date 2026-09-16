@@ -30,6 +30,25 @@ if [[ ! "$SCREEN_SAMPLES" =~ ^[1-9][0-9]*$ ]]; then
   echo "AERO_REGISTRATION_SCREEN_SAMPLES must be a positive integer" >&2
   exit 2
 fi
+cd "$PROJECT_ROOT"
+export PYTHONPATH="$PROJECT_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+SCREEN_OUT="$OUTPUT_ROOT/antiuav300_dense_registration_screen.json"
+FULL_OUT="$OUTPUT_ROOT/antiuav300_dense_registration_audit.json"
+FINE_TUNED_CHECKPOINT="$TRAIN_DIR/antiuav300_dense_matcher_e300.pth"
+
+if [[ -e "$FULL_OUT" ]]; then
+  "$PYTHON_BIN" -m scripts.check_antiuav300_registration_report \
+    --report "$FULL_OUT" --checkpoint "$FINE_TUNED_CHECKPOINT" \
+    --root "$DATA_ROOT" --stage full
+  exit 0
+fi
+SCREEN_EXISTS=0
+if [[ -e "$SCREEN_OUT" ]]; then
+  "$PYTHON_BIN" -m scripts.check_antiuav300_registration_report \
+    --report "$SCREEN_OUT" --checkpoint "$FINE_TUNED_CHECKPOINT" \
+    --root "$DATA_ROOT" --stage screen --screen-samples "$SCREEN_SAMPLES"
+  SCREEN_EXISTS=1
+fi
 if [[ -n "$(git -C "$PROJECT_ROOT" status --porcelain)" ]]; then
   echo "registration qualification requires a clean Git checkout" >&2
   git -C "$PROJECT_ROOT" status --short >&2
@@ -55,8 +74,6 @@ printf '%s  %s\n' "$CHECKPOINT_SHA256" "$CHECKPOINT" | sha256sum --check --statu
   exit 2
 }
 
-cd "$PROJECT_ROOT"
-export PYTHONPATH="$PROJECT_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 COMMON_ENV=(
   env -u LD_LIBRARY_PATH
   CUDA_VISIBLE_DEVICES="$CUDA_DEVICE_VALUE"
@@ -68,15 +85,6 @@ echo "Checking CUDA and the pinned registration dependency..."
 "${COMMON_ENV[@]}" "$PYTHON_BIN" -c \
   "import kornia, torch; assert kornia.__version__ == '0.6.5', kornia.__version__; assert torch.cuda.is_available(), 'CUDA unavailable'; print(torch.cuda.get_device_name(0), torch.__version__, torch.version.cuda, 'kornia', kornia.__version__)"
 
-SCREEN_OUT="$OUTPUT_ROOT/antiuav300_dense_registration_screen.json"
-FULL_OUT="$OUTPUT_ROOT/antiuav300_dense_registration_audit.json"
-if [[ -e "$SCREEN_OUT" || -e "$FULL_OUT" ]]; then
-  echo "refusing to overwrite a prior registration result" >&2
-  echo "move or archive these files first: $SCREEN_OUT $FULL_OUT" >&2
-  exit 2
-fi
-
-FINE_TUNED_CHECKPOINT="$TRAIN_DIR/antiuav300_dense_matcher_e300.pth"
 if [[ ! -f "$FINE_TUNED_CHECKPOINT" ]]; then
   TRAIN_ARGS=()
   if [[ -f "$TRAIN_DIR/latest.pth" ]]; then
@@ -101,18 +109,20 @@ if [[ ! -s "$FINE_TUNED_CHECKPOINT" ]]; then
   exit 1
 fi
 
-echo "Running the sequence-balanced train/validation screen..."
-"${COMMON_ENV[@]}" "$PYTHON_BIN" scripts/audit_antiuav300_dense_registration.py \
-  --root "$DATA_ROOT" \
-  --checkpoint "$FINE_TUNED_CHECKPOINT" \
-  --out "$SCREEN_OUT" \
-  --splits train val \
-  --samples-per-sequence "$SCREEN_SAMPLES" \
-  --batch-size "$BATCH_SIZE" \
-  --device cuda
-
-"$PYTHON_BIN" -c \
-  "import json; p=json.load(open('$SCREEN_OUT')); assert p['gates']['sequence_balanced_screen']=='pass', 'screen HOLD; do not launch exhaustive audit or generator training'"
+if [[ "$SCREEN_EXISTS" -eq 0 ]]; then
+  echo "Running the sequence-balanced train/validation screen..."
+  "${COMMON_ENV[@]}" "$PYTHON_BIN" scripts/audit_antiuav300_dense_registration.py \
+    --root "$DATA_ROOT" \
+    --checkpoint "$FINE_TUNED_CHECKPOINT" \
+    --out "$SCREEN_OUT" \
+    --splits train val \
+    --samples-per-sequence "$SCREEN_SAMPLES" \
+    --batch-size "$BATCH_SIZE" \
+    --device cuda
+  "$PYTHON_BIN" -m scripts.check_antiuav300_registration_report \
+    --report "$SCREEN_OUT" --checkpoint "$FINE_TUNED_CHECKPOINT" \
+    --root "$DATA_ROOT" --stage screen --screen-samples "$SCREEN_SAMPLES"
+fi
 
 echo "The screen passed. Running every usable train/validation pair..."
 "${COMMON_ENV[@]}" "$PYTHON_BIN" scripts/audit_antiuav300_dense_registration.py \
@@ -124,7 +134,8 @@ echo "The screen passed. Running every usable train/validation pair..."
   --batch-size "$BATCH_SIZE" \
   --device cuda
 
-"$PYTHON_BIN" -c \
-  "import json; p=json.load(open('$FULL_OUT')); assert p['gates']['generator_training_eligible']=='pass', 'exhaustive registration HOLD; do not launch generator training'"
+"$PYTHON_BIN" -m scripts.check_antiuav300_registration_report \
+  --report "$FULL_OUT" --checkpoint "$FINE_TUNED_CHECKPOINT" \
+  --root "$DATA_ROOT" --stage full
 
 echo "Anti-UAV300 RGB-to-IR registration qualification passed: $FULL_OUT"

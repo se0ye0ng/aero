@@ -78,7 +78,7 @@ it beats the free option.**
 
 ### Current GO / NO-GO gate
 
-As of 2026-09-14:
+As of 2026-09-15:
 
 - **GO:** `make smoke` passes with 92 tests. The data-free pilot separated faithful RFS (0.542)
   from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
@@ -187,7 +187,7 @@ As of 2026-09-14:
   calibrated target-box transfer, dense image registration and generator training on HOLD.
   Test metrics are report-only and did not fit, select or qualify the transform. Thresholds must
   not be relaxed after observing this result.
-- **READY FOR GPU QUALIFICATION (Anti-UAV300 dense registration):** the failed global-transform
+- **HOLD (Anti-UAV300 dense registration):** the failed global-transform
   assumption has been replaced by a device-safe adapter for SuperFusion's image-conditioned
   DenseMatcher. The adapter loads the pinned public RoadScene checkpoint
   (`09337ddd...f9a416`) exactly, removes upstream hard-coded GPU selection and excludes unrelated
@@ -196,10 +196,25 @@ As of 2026-09-14:
   execution evidence, not qualification. The corrective run fine-tunes on 16 frozen pairs from
   each of the 160 official training sequences for 300 epochs: batch 16 gives exactly 160 updates
   per epoch and 48,000 total updates. It never opens validation/test during fitting. Only then
-  does `scripts/run_antiuav300_registration.sh` run a sequence-balanced train/validation screen
-  and, on a pass, the exhaustive 199,798-pair train/validation audit under frozen geometry,
-  flow-validity and edge-alignment thresholds. Until the exhaustive report passes, dense
-  registration and generator training remain **HOLD**.
+  did `scripts/run_antiuav300_registration.sh` run a sequence-balanced train/validation screen
+  under frozen geometry, flow-validity and edge-alignment thresholds. The 300-epoch checkpoint
+  (`a4c8aafe...2388a`) was produced, but the immutable screen (`3dcdb5de...0b7f78`) passed
+  only 74.22% of 1,280 training pairs and 67.54% of 536 held-out validation pairs jointly,
+  against the frozen 95% requirement. Validation median box IoU is 0.699; its area-change gate
+  passes only 76.87% of frames. The runner correctly stopped before the exhaustive 199,798-pair
+  audit. This is a qualification failure, not a CUDA or checkpoint-loading error. The fixed
+  16-pair-per-sequence cache and mean perimeter/edge loss did not produce box-transfer precision
+  sufficient for the frozen gate; repeating the same 300 epochs cannot fix that observation.
+  Dense registration and generator training remain **HOLD**. The original checkpoint, report
+  and thresholds must not be overwritten or relaxed after observing validation.
+- **FROZEN FOR EXECUTION (Anti-UAV300 dense registration v2):** a distinct geometry-first
+  protocol was committed before its run. It initializes from the immutable train-only v1
+  checkpoint, rotates through all 141,816 usable training pairs across the same 300-epoch/48,000
+  step budget, and directly optimizes box IoU, centroid, area and worst perimeter error while
+  retaining structural-edge and deformation regularization. It uses no validation/test data for
+  fitting and must pass the original 95% screen before the unchanged exhaustive test runs.
+  `docs/experiment_protocol.md` records its frozen loss and literature basis. A failure remains a
+  HOLD; no post-result adjustment is permitted under this protocol.
 - **GO (Anti-UAV300 native-IR detector engineering smoke only):** the registration-independent
   adapter selects an endpoint-inclusive uniform grid before inspecting labels: eight frames from
   each of 160 training sequences and four from each of 67 validation sequences. It retains
@@ -272,7 +287,7 @@ Class-conditioned RFS aggregation and a frozen undefined-statistic policy remain
 | Pinned YOLOX FLIR adapter, evaluator and run lifecycle | `src/aero_ir/detect/` | v1 replay exceeded tolerance; deterministic fix passes an exact twin GPU smoke; clean full v2 baseline and metric replay passed |
 | Anti-UAV300 archive/video/annotation audit | `src/aero_ir/data/antiuav.py`, `scripts/audit_antiuav300.py` | implemented; archive, extraction and timing passed; annotation/registration holds recorded |
 | Anti-UAV300 train-only registration audit | `src/aero_ir/data/antiuav_registration.py`, `scripts/audit_antiuav300_registration.py` | implemented; global target-box calibration failed train and held-out validation gates |
-| Anti-UAV300 image-conditioned dense registration | `src/aero_ir/registration/superfusion.py`, `scripts/train_antiuav300_registration.py`, `scripts/audit_antiuav300_dense_registration.py` | device-safe train-only 300-epoch correction and frozen GPU qualification implemented; run pending |
+| Anti-UAV300 image-conditioned dense registration | `src/aero_ir/registration/superfusion.py`, `scripts/train_antiuav300_registration.py`, `scripts/audit_antiuav300_dense_registration.py` | 300-epoch GPU fit completed; frozen sequence-balanced train/validation screen failed (74.22%/67.54% joint versus 95%); exhaustive audit and generator training HOLD |
 | Anti-UAV300 native-IR YOLOX adapter | `src/aero_ir/data/antiuav300_ir.py`, `src/aero_ir/detect/yolox_antiuav300_exp.py` | smoke and 20-epoch diagnostic passed; corrected 300-epoch standard schedule CPU-verified, GPU run pending |
 | Anti-UAV410 external detection adapter | `src/aero_ir/data/antiuav410.py`, `scripts/audit_antiuav410.py`, `scripts/prepare_antiuav410.py` | implemented; local archive/test manifest passed; 64 invalid test positives excluded and counted |
 
@@ -460,8 +475,9 @@ The local Anti-UAV300 release is currently usable for a filtered IR-only trainin
 for paired generator training. Its official split manifests are sequence-disjoint and temporally
 paired, but zero-area present boxes must be excluded. A train-fitted global RGB-to-IR box
 transform fails both its training sanity and held-out validation gates. The replacement
-image-conditioned dense matcher is implemented, but it cannot clear the hold until its unchanged
-parameters pass the sequence-balanced screen and exhaustive held-out validation audit. The
+image-conditioned dense matcher completed its 300-epoch train-only fit, but its unchanged
+parameters failed the sequence-balanced screen (74.22% train, 67.54% validation joint pass
+against 95%). The exhaustive held-out validation audit was correctly not run. The
 display-referred 8-bit MP4 stream is also not a substitute for radiometric DN data. The local
 Anti-UAV410 external-test adapter is ready, but that does not resolve the paired-source hold.
 
@@ -471,7 +487,7 @@ Anti-UAV410 external-test adapter is ready, but that does not resolve the paired
 |---|---|
 | `src/aero_ir/data/antiuav.py`, `antiuav300_ir.py` | archive/split audit plus manifest-locked native-IR smoke preparation; label-independent sampling, invalid-positive exclusion and negative retention are implemented |
 | `src/aero_ir/data/antiuav_registration.py` | sequence-balanced robust target-box transform fit on train only and applied unchanged to validation/test; qualification fails |
-| `src/aero_ir/registration/superfusion.py`, `scripts/audit_antiuav300_dense_registration.py` | pinned public dense matcher, sub-pixel box-flow inversion, fixed dense/geometry gates and sequence-balanced-to-exhaustive qualification; GPU result pending |
+| `src/aero_ir/registration/superfusion.py`, `scripts/audit_antiuav300_dense_registration.py` | pinned public dense matcher, sub-pixel box-flow inversion and fixed dense/geometry gates; completed 300-epoch fit failed sequence-balanced GPU qualification |
 | `src/aero_ir/detect/antiuav300_yolox.py`, `yolox_antiuav300_exp.py` | one-class prepared-PNG loader and deterministic YOLOX-s smoke/standard profiles; no paired RGB input is used |
 | `src/aero_ir/data/antiuav410.py` | audited, content-addressed test-only tracking-to-detection manifest and COCO export; invalid positives are excluded and negatives retained |
 | `src/aero_ir/data/registry.py` | lazy Anti-UAV410 external-test loader preserving `sequence_id`, visibility, attributes and `target_pixel_area_bin`; Anti-UAV300 training remains registration-gated |
@@ -486,6 +502,7 @@ bash scripts/download_antiuav.sh
 make audit-antiuav300       # writes experiments/antiuav300_data_audit.json
 make audit-antiuav300-registration  # CPU; train fit, validation gate, report-only test
 bash scripts/run_antiuav300_registration.sh  # GPU; screen, then exhaustive audit only on pass
+bash scripts/run_antiuav300_registration_v2.sh  # GPU; frozen v2, then unchanged screen/full test
 make pilot-antiuav300-rfs   # train-only; writes experiments/antiuav300_rfs_pilot.json
 make prepare-antiuav300-ir-yolox  # CPU; uniform native-IR subset + full hash preflight
 AERO_ANTIUAV300_RUN_ID=antiuav300_native_ir_standard_seed0_e300_v1 \
@@ -501,6 +518,11 @@ make prepare-antiuav410     # CPU; immutable test manifest plus COCO export
 
 # Do not run make e5 yet: Anti-UAV300 failed paired-source registration and generator gates.
 ```
+
+Re-running `scripts/run_antiuav300_registration.sh` with the existing screen verifies its content
+hash, dataset root, checkpoint hash and frozen gate computation, then reports **HOLD** with exit
+code 3 without requiring CUDA or overwriting the result. A new training method needs a distinct,
+pre-registered run; moving or deleting this screen does not make the failed gate pass.
 
 **Exit criterion.** On sequence-disjoint external data, is `dAP > 0`, and does the fitted sensor
 model beat both the generic profile and no sensor model? This tests transfer beyond the urban
