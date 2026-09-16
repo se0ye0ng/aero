@@ -82,6 +82,15 @@ against the required 95%. The exhaustive audit was not run, and the official tes
 report-only. The generator-training hold is unchanged. The existing checkpoint and screen are
 immutable; a redesign must be registered as a distinct protocol rather than replacing this result.
 
+The separately frozen geometry-first v2 redesign subsequently completed 300 epochs and 48,000
+optimizer steps using rotating coverage of all 141,816 usable training pairs. It did not access
+validation or test while fitting. Its checkpoint is `13dd5c47...1135f`, and its immutable screen
+is `9e7727a1...15f4c`. The screen failed more decisively than v1: 29.30% train and 22.57% held-out
+validation joint pass versus 95%. Validation median edge-NCC gain was 0.593, but median box IoU
+was 0.386 and median absolute area-ratio change was 1.357. The exhaustive audit was therefore
+blocked by design. Anti-UAV300 remains unsuitable for paired generator training under both
+audited registration protocols; native-IR work is unaffected by this registration result.
+
 The registration-independent detector smoke uses only native IR frames. An endpoint-inclusive,
 label-independent grid selects 8 frames per training sequence and 4 per validation sequence;
 test is never accessed. The prepared manifest `c50c5df6...2f86fa` contains 1,279 training images

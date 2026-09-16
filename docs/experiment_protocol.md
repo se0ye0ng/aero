@@ -79,6 +79,18 @@ passes Anti-UAV300. Because v1 aggregate validation performance was already obse
 was designed, a v2 pass qualifies this engineering gate but is not a pristine independent
 confirmation of the research claim. External paired replication remains required for that claim.
 
+Execution completed on 2026-09-16 without changing the frozen protocol. The train-only fit used
+all 300 epochs and 48,000 optimizer steps; checkpoint `13dd5c47...1135f` records the frozen v1
+initialization hash, cache-manifest hash, source revision and the absence of validation/test
+access. The immutable sequence-balanced screen (`9e7727a1...15f4c`) failed: train joint pass was
+29.30% and held-out validation joint pass was 22.57%, against 95%. Validation median edge-NCC
+gain was 0.593 and 99.81% of frames improved in edge-NCC, but median box IoU was 0.386, median
+absolute area-ratio change was 1.357, and only 63.25% passed the inverse-residual threshold. The
+model learned cross-modal structural attraction without sufficiently invertible,
+geometry-preserving flow. Per the frozen decision rule, the exhaustive 199,798-pair audit was not
+run and paired generator training remains HOLD. This result must not be replaced by post-hoc
+threshold or loss changes; any new intervention requires a separately frozen protocol.
+
 ## Label transfer audit (F4)
 
 Labels are carried across the generation step. If generation displaces or deforms object
