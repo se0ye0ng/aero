@@ -91,6 +91,17 @@ was 0.386 and median absolute area-ratio change was 1.357. The exhaustive audit 
 blocked by design. Anti-UAV300 remains unsuitable for paired generator training under both
 audited registration protocols; native-IR work is unaffected by this registration result.
 
+A subsequent root-cause audit preserves that v2 failure but corrects its interpretation.
+SuperFusion emits a backward sampling field from IR output coordinates to visible input
+coordinates. Directly mapping the IR annotation through that native field passes 94.30% of the
+training screen and 92.16% of the validation screen; the legacy operation that inverted an
+axis-aligned visible-box perimeter reproduces the reported 29.30%/22.57%. The mismatch is caused
+primarily by evaluating the wrong geometric object and direction, not by widespread folding
+(mean full-field fold fraction is below 1% in both splits). The corrected result still misses the
+frozen 95% threshold. A distinct v3 protocol is therefore frozen to train and audit both native
+SuperFusion directions with an explicit reciprocal-map consistency constraint. Until its screen
+and exhaustive train/validation audit pass, Anti-UAV300 paired use remains HOLD.
+
 The registration-independent detector smoke uses only native IR frames. An endpoint-inclusive,
 label-independent grid selects 8 frames per training sequence and 4 per validation sequence;
 test is never accessed. The prepared manifest `c50c5df6...2f86fa` contains 1,279 training images

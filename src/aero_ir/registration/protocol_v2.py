@@ -103,8 +103,11 @@ def geometry_first_loss(
     """Optimize box extents, small-target error and structural correspondence.
 
     The original v1 mean perimeter objective could be small even when one
-    outlying perimeter point changed a transferred box's IoU or area. v2
-    backpropagates through the same source-to-target inversion used by audit.
+    outlying perimeter point changed a transferred box's IoU or area. The
+    matcher field is a backward sampling map, so v2 directly maps target/IR
+    support into source/visible coordinates. The legacy audit incorrectly
+    inverted a source-box enclosure; protocol v3 corrects that qualification
+    path without changing this frozen v2 loss.
     """
     source_points = box_perimeter_points(source_boxes)
     target_points = box_perimeter_points(target_boxes)

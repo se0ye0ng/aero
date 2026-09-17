@@ -218,6 +218,16 @@ As of 2026-09-16:
   passed only 63.25%. The runner therefore correctly blocked the 199,798-pair exhaustive audit.
   This is a scientific qualification failure, not a CUDA or runner failure. The screen,
   checkpoint and thresholds are immutable; paired generator training remains **HOLD**.
+- **HOLD (direction audit; v3 frozen, execution pending):** a content-addressed root-cause audit
+  found that v2 training scored SuperFusion's native backward map (IR output coordinates to RGB
+  input coordinates), while the old screen numerically inverted the perimeter of an axis-aligned
+  RGB box. That operation is not the inverse of mapping and enclosing the IR box under a nonlinear
+  field. The corrected native support check reaches 94.30% train and 92.16% validation joint pass,
+  versus 29.30%/22.57% through the legacy inverse-box path. Because 92.16% is still below 95%, v2
+  is not reclassified. Protocol v3 is separately frozen: it trains both native SuperFusion
+  directions for 300 epochs/96,000 steps, composes them for inverse consistency, and gates both
+  directions plus coverage, positive Jacobian, cycle and edge evidence. Paired generator training
+  remains **HOLD** until the v3 screen and exhaustive audit pass.
 - **GO (Anti-UAV300 native-IR detector engineering smoke only):** the registration-independent
   adapter selects an endpoint-inclusive uniform grid before inspecting labels: eight frames from
   each of 160 training sequences and four from each of 67 validation sequences. It retains
@@ -506,6 +516,7 @@ make audit-antiuav300       # writes experiments/antiuav300_data_audit.json
 make audit-antiuav300-registration  # CPU; train fit, validation gate, report-only test
 bash scripts/run_antiuav300_registration.sh  # GPU; screen, then exhaustive audit only on pass
 bash scripts/run_antiuav300_registration_v2.sh  # GPU; frozen v2, then unchanged screen/full test
+bash scripts/run_antiuav300_registration_v3.sh  # GPU; bidirectional 300-epoch fit and corrected gate
 make pilot-antiuav300-rfs   # train-only; writes experiments/antiuav300_rfs_pilot.json
 make prepare-antiuav300-ir-yolox  # CPU; uniform native-IR subset + full hash preflight
 AERO_ANTIUAV300_RUN_ID=antiuav300_native_ir_standard_seed0_e300_v1 \

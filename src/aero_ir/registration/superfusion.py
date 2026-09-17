@@ -525,13 +525,16 @@ def transform_boxes_source_to_target(
     perimeter_samples: int = 16,
     inverse_iterations: int = 12,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Transform normalized ``cx,cy,w,h`` boxes through a target-to-source field.
+    """Transform boxes by legacy fixed-point inversion of a target-to-source field.
 
     ``grid_sample`` displacement fields are inverse maps: each target location
     identifies a source location. We solve ``target + displacement(target) =
     source`` at sub-pixel perimeter points instead of rasterising small UAV
-    boxes into a low-resolution mask. The returned residual is the largest
-    normalized-grid inverse error for each image.
+    boxes into a low-resolution mask. Fixed-point iteration requires the
+    displacement map to be locally contractive; use
+    :func:`transform_boxes_source_to_target_newton` when that assumption has
+    not been established. The returned residual is the largest normalized-grid
+    inverse error for each image.
     """
     if boxes.ndim != 2 or boxes.shape[1] != 4:
         raise ValueError("boxes must have shape N,4")
@@ -574,6 +577,197 @@ def transform_boxes_source_to_target(
     maximum = target.amax(dim=1)
     transformed = torch.cat(((minimum + maximum) / 2.0, maximum - minimum), dim=1)
     return transformed, residual
+
+
+def _sample_displacement(displacement: torch.Tensor, points: torch.Tensor) -> torch.Tensor:
+    """Sample ``N,2,H,W`` displacement at ``N,P,2`` normalized-grid points."""
+    return (
+        F.grid_sample(
+            displacement,
+            points.unsqueeze(2),
+            mode="bilinear",
+            padding_mode="border",
+            align_corners=False,
+        )
+        .squeeze(-1)
+        .permute(0, 2, 1)
+    )
+
+
+def transform_boxes_target_to_source(
+    boxes: torch.Tensor,
+    displacement: torch.Tensor,
+    *,
+    perimeter_samples: int = 16,
+) -> torch.Tensor:
+    """Map target boxes directly through a target-to-source sampling field."""
+    if boxes.ndim != 2 or boxes.shape[1] != 4:
+        raise ValueError("boxes must have shape N,4")
+    if displacement.ndim != 4 or displacement.shape[:2] != (boxes.shape[0], 2):
+        raise ValueError("displacement batch must match N boxes and have two channels")
+    target = box_perimeter_points(boxes, perimeter_samples)
+    source = (target + _sample_displacement(displacement, target) + 1.0) / 2.0
+    minimum = source.amin(dim=1)
+    maximum = source.amax(dim=1)
+    return torch.cat(((minimum + maximum) / 2.0, maximum - minimum), dim=1)
+
+
+def invert_target_to_source_points_newton(
+    source: torch.Tensor,
+    displacement: torch.Tensor,
+    *,
+    iterations: int = 12,
+    max_step: float = 0.25,
+    jacobian_epsilon: float | None = None,
+    initial_target: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Invert target-to-source points with damped two-dimensional Newton steps.
+
+    The legacy fixed-point update diverges for valid maps whose displacement
+    Jacobian has spectral radius at least one (for example, a 2x scale). This
+    solver differentiates the sampled field numerically and solves the local
+    2x2 system. It returns target points, per-image maximum residual and the
+    per-point determinant of the final target-to-source Jacobian.
+    """
+    if source.ndim != 3 or source.shape[0] != displacement.shape[0] or source.shape[2] != 2:
+        raise ValueError("source must have shape N,P,2 and match displacement batch")
+    if displacement.ndim != 4 or displacement.shape[1] != 2:
+        raise ValueError("displacement must have shape N,2,H,W")
+    if iterations < 1 or max_step <= 0:
+        raise ValueError("iterations and max_step must be positive")
+    if initial_target is not None and initial_target.shape != source.shape:
+        raise ValueError("initial_target must have the same shape as source")
+    target = source.clone() if initial_target is None else initial_target.clone()
+    for _ in range(iterations):
+        sampled = _sample_displacement(displacement, target)
+        jacobian = sample_target_to_source_jacobian(
+            target,
+            displacement,
+            epsilon=jacobian_epsilon,
+        )
+        residual = target + sampled - source
+        regularizer = 1e-4 * torch.eye(2, device=source.device, dtype=source.dtype)
+        step = torch.linalg.solve(jacobian + regularizer, residual.unsqueeze(-1)).squeeze(-1)
+        step_norm = torch.linalg.vector_norm(step, dim=-1, keepdim=True).clamp_min(1e-12)
+        step = step * torch.clamp(max_step / step_norm, max=1.0)
+        current_norm = torch.linalg.vector_norm(residual, dim=-1)
+        best_target = target
+        best_norm = current_norm
+        for scale in (1.0, 0.5, 0.25, 0.125):
+            candidate = (target - scale * step).clamp(-1.0, 1.0)
+            candidate_residual = candidate + _sample_displacement(displacement, candidate) - source
+            candidate_norm = torch.linalg.vector_norm(candidate_residual, dim=-1)
+            improved = candidate_norm < best_norm
+            best_target = torch.where(improved.unsqueeze(-1), candidate, best_target)
+            best_norm = torch.where(improved, candidate_norm, best_norm)
+        target = best_target
+    point_residual = torch.linalg.vector_norm(
+        target + _sample_displacement(displacement, target) - source, dim=-1
+    )
+    determinant = torch.linalg.det(
+        sample_target_to_source_jacobian(target, displacement, epsilon=jacobian_epsilon)
+    )
+    return target, point_residual.amax(dim=1), determinant
+
+
+def sample_target_to_source_jacobian(
+    points: torch.Tensor,
+    displacement: torch.Tensor,
+    *,
+    epsilon: float | None = None,
+) -> torch.Tensor:
+    """Numerically sample the Jacobian of ``target + displacement(target)``."""
+    if points.ndim != 3 or points.shape[0] != displacement.shape[0] or points.shape[2] != 2:
+        raise ValueError("points must have shape N,P,2 and match displacement batch")
+    if displacement.ndim != 4 or displacement.shape[1] != 2:
+        raise ValueError("displacement must have shape N,2,H,W")
+    height, width = displacement.shape[2:]
+    step = epsilon or min(2.0 / width, 2.0 / height)
+    offset_x = points.new_tensor([step, 0.0])
+    offset_y = points.new_tensor([0.0, step])
+    derivative_x = (
+        _sample_displacement(displacement, points + offset_x)
+        - _sample_displacement(displacement, points - offset_x)
+    ) / (2.0 * step)
+    derivative_y = (
+        _sample_displacement(displacement, points + offset_y)
+        - _sample_displacement(displacement, points - offset_y)
+    ) / (2.0 * step)
+    return torch.stack(
+        (
+            torch.stack((1.0 + derivative_x[..., 0], derivative_y[..., 0]), dim=-1),
+            torch.stack((derivative_x[..., 1], 1.0 + derivative_y[..., 1]), dim=-1),
+        ),
+        dim=-2,
+    )
+
+
+def transform_boxes_source_to_target_newton(
+    boxes: torch.Tensor,
+    displacement: torch.Tensor,
+    *,
+    perimeter_samples: int = 16,
+    inverse_iterations: int = 12,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Diagnose source-box inversion with fixed-point/Newton candidate roots.
+
+    This is a point-map diagnostic, not a valid way to score inverse-warp box
+    registration: taking an axis-aligned enclosure and inverting its perimeter
+    do not commute for a nonlinear transform. The hybrid candidates make the
+    numerical residual no worse than the legacy fixed-point result.
+    """
+    if boxes.ndim != 2 or boxes.shape[1] != 4:
+        raise ValueError("boxes must have shape N,4")
+    if displacement.ndim != 4 or displacement.shape[:2] != (boxes.shape[0], 2):
+        raise ValueError("displacement batch must match N boxes and have two channels")
+    source = box_perimeter_points(boxes, perimeter_samples)
+    fixed_target = source.clone()
+    for _ in range(inverse_iterations):
+        fixed_target = source - _sample_displacement(displacement, fixed_target)
+    source_seed, source_residual, source_determinant = invert_target_to_source_points_newton(
+        source,
+        displacement,
+        iterations=inverse_iterations,
+    )
+    fixed_seed, fixed_residual, fixed_determinant = invert_target_to_source_points_newton(
+        source,
+        displacement,
+        iterations=inverse_iterations,
+        initial_target=fixed_target,
+    )
+    raw_fixed_residual = torch.linalg.vector_norm(
+        fixed_target + _sample_displacement(displacement, fixed_target) - source, dim=-1
+    )
+    source_seed_residual = torch.linalg.vector_norm(
+        source_seed + _sample_displacement(displacement, source_seed) - source, dim=-1
+    )
+    fixed_seed_residual = torch.linalg.vector_norm(
+        fixed_seed + _sample_displacement(displacement, fixed_seed) - source, dim=-1
+    )
+    candidates = torch.stack((raw_fixed_residual, source_seed_residual, fixed_seed_residual), dim=0)
+    choice = candidates.argmin(dim=0)
+    target = torch.where(
+        (choice == 0).unsqueeze(-1),
+        fixed_target,
+        torch.where((choice == 1).unsqueeze(-1), source_seed, fixed_seed),
+    )
+    fixed_determinant_raw = torch.linalg.det(
+        sample_target_to_source_jacobian(fixed_target, displacement)
+    )
+    determinant = torch.where(
+        choice == 0,
+        fixed_determinant_raw,
+        torch.where(choice == 1, source_determinant, fixed_determinant),
+    )
+    residual = candidates.amin(dim=0).amax(dim=1)
+    # Keep these reductions explicit: they ensure future refactors cannot
+    # accidentally report a candidate other than the selected per-point root.
+    assert residual.shape == source_residual.shape == fixed_residual.shape
+    normalized = (target + 1.0) / 2.0
+    minimum = normalized.amin(dim=1)
+    maximum = normalized.amax(dim=1)
+    transformed = torch.cat(((minimum + maximum) / 2.0, maximum - minimum), dim=1)
+    return transformed, residual, determinant
 
 
 def box_perimeter_points(boxes: torch.Tensor, perimeter_samples: int = 16) -> torch.Tensor:

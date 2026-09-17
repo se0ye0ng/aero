@@ -86,10 +86,53 @@ access. The immutable sequence-balanced screen (`9e7727a1...15f4c`) failed: trai
 29.30% and held-out validation joint pass was 22.57%, against 95%. Validation median edge-NCC
 gain was 0.593 and 99.81% of frames improved in edge-NCC, but median box IoU was 0.386, median
 absolute area-ratio change was 1.357, and only 63.25% passed the inverse-residual threshold. The
-model learned cross-modal structural attraction without sufficiently invertible,
-geometry-preserving flow. Per the frozen decision rule, the exhaustive 199,798-pair audit was not
-run and paired generator training remains HOLD. This result must not be replaced by post-hoc
-threshold or loss changes; any new intervention requires a separately frozen protocol.
+screen therefore remained HOLD under its pre-registered computation. Per the frozen decision
+rule, the exhaustive 199,798-pair audit was not run and paired generator training remains HOLD.
+This result must not be replaced by post-hoc threshold or loss changes; any new intervention
+requires a separately frozen protocol.
+
+#### Root-cause audit and Anti-UAV300 registration protocol v3 (frozen 2026-09-17)
+
+The v2 screen used the wrong geometric direction for a backward sampling field. SuperFusion's
+visible-to-infrared field assigns each infrared output coordinate a visible input coordinate.
+Training scored the native infrared-to-visible coordinate map, but the screen instead tried to
+recover infrared coordinates by fixed-point inversion of the perimeter of an axis-aligned visible
+box. Nonlinear transformation, axis-aligned enclosure and inversion do not commute. This is a
+measurement error, not evidence that the immutable v2 result passed.
+
+The content-addressed root-cause audit (`9a24eb17...9a565`) reran the exact 8-pair-per-sequence
+screen through both paths. The native target-to-source support check reaches 94.30% train and
+92.16% validation joint pass, while the legacy inverse-box path reproduces 29.30% and 22.57%.
+Mean full-field fold fractions are only 0.83% and 0.94%; a synthetic 2.1x affine scale also proves
+that the legacy fixed-point solver can fail on a valid noncontractive map. Worst-case overlays are
+saved beside the audit. The corrected native path is substantially better but remains below the
+unchanged 95% gate, so v2 remains HOLD and is not reclassified.
+
+Protocol v3 is a distinct pre-registered intervention:
+
+- initialize from immutable v2 checkpoint `13dd5c47...1135f` and reuse its verified train-only
+  cache without opening validation or test during fitting;
+- train SuperFusion's two native backward maps, visible-to-infrared and infrared-to-visible,
+  rather than numerically inverting either map;
+- retain 300 epochs and 16 rotating pairs per training sequence per epoch; batch 8 gives 320
+  steps/epoch and 96,000 optimizer steps;
+- average the two geometry-first losses and add explicit off-grid inverse-consistency loss by
+  composing the reciprocal dense maps;
+- retain the original IoU, centroid, area, coverage and edge thresholds in both directions, and
+  additionally require 95% of frames to have mean valid-pixel cycle residual at most 0.01, at
+  least 99% positive Jacobian pixels, and at least 90% valid cycle coverage;
+- run the immutable 8-pair-per-sequence train/validation screen first. Only a pass runs every
+  usable train/validation pair; official test remains unopened and report-only.
+
+This direction convention follows the backward sampler defined by Spatial Transformer Networks
+and the upstream SuperFusion implementation. SuperFusion explicitly estimates bidirectional
+deformation fields; ICON and GradICON motivate reciprocal-map composition as an inverse-
+consistency regularizer. References: [STN](https://proceedings.neurips.cc/paper/5854-spatial-transformer-networks.pdf),
+[SuperFusion](https://doi.org/10.1109/JAS.2022.106082),
+[ICON](https://openaccess.thecvf.com/content/ICCV2021/html/Greer_ICON_Learning_Regular_Maps_Through_Inverse_Consistency_ICCV_2021_paper.html),
+and [GradICON](https://openaccess.thecvf.com/content/CVPR2023/html/Tian_GradICON_Approximate_Diffeomorphisms_via_Gradient_Inverse_Consistency_CVPR_2023_paper.html).
+Because prior validation aggregates informed v3, even a v3 pass is an engineering qualification,
+not pristine independent confirmation; an external paired replication is still required.
 
 ## Label transfer audit (F4)
 

@@ -134,6 +134,61 @@ def test_registration_training_loss_has_finite_flow_gradients():
     assert torch.isfinite(displacement.grad).all()
 
 
+def _affine_target_to_source_field(
+    scale: float, translation: tuple[float, float], size: int = 64
+) -> torch.Tensor:
+    axis = torch.linspace(-1.0, 1.0, size)
+    grid_y, grid_x = torch.meshgrid(axis, axis, indexing="ij")
+    return torch.stack(
+        (
+            (scale - 1.0) * grid_x + translation[0],
+            (scale - 1.0) * grid_y + translation[1],
+        )
+    ).unsqueeze(0)
+
+
+def test_known_translation_agrees_across_direct_and_inverse_box_paths():
+    from aero_ir.registration.superfusion import (
+        transform_boxes_source_to_target_newton,
+        transform_boxes_target_to_source,
+    )
+
+    target = torch.tensor([[0.42, 0.57, 0.16, 0.10]])
+    displacement = _affine_target_to_source_field(1.0, (0.12, -0.08))
+    source = target + torch.tensor([[0.06, -0.04, 0.0, 0.0]])
+
+    direct = transform_boxes_target_to_source(target, displacement)
+    inverse, residual, determinant = transform_boxes_source_to_target_newton(source, displacement)
+
+    assert torch.allclose(direct, source, atol=2e-4)
+    assert torch.allclose(inverse, target, atol=2e-4)
+    assert residual.max() < 1e-4
+    assert determinant.min() > 0.99
+
+
+def test_newton_inverse_handles_valid_noncontractive_scale():
+    from aero_ir.registration.superfusion import (
+        transform_boxes_source_to_target,
+        transform_boxes_source_to_target_newton,
+        transform_boxes_target_to_source,
+    )
+
+    scale = 2.1
+    target = torch.tensor([[0.48, 0.52, 0.08, 0.06]])
+    displacement = _affine_target_to_source_field(scale, (0.02, -0.04))
+    source = transform_boxes_target_to_source(target, displacement)
+    legacy, legacy_residual = transform_boxes_source_to_target(source, displacement)
+    robust, robust_residual, determinant = transform_boxes_source_to_target_newton(
+        source, displacement
+    )
+
+    assert legacy_residual.item() > 0.1
+    assert not torch.allclose(legacy, target, atol=1e-2)
+    assert torch.allclose(robust, target, atol=2e-3)
+    assert robust_residual.item() < 1e-3
+    assert determinant.min() > 4.0
+
+
 def test_existing_registration_report_is_verified_and_hold_is_preserved(tmp_path):
     checkpoint = tmp_path / "matcher.pth"
     torch.save({"DM": {}}, checkpoint)
