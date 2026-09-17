@@ -91,22 +91,23 @@ rule, the exhaustive 199,798-pair audit was not run and paired generator trainin
 This result must not be replaced by post-hoc threshold or loss changes; any new intervention
 requires a separately frozen protocol.
 
-#### Root-cause audit and Anti-UAV300 registration protocol v3 (frozen 2026-09-17)
+#### Historical Anti-UAV300 protocol v3 (superseded for qualification)
 
-The v2 screen used the wrong geometric direction for a backward sampling field. SuperFusion's
+The v2 screen and loss evaluated different geometric objects. SuperFusion's
 visible-to-infrared field assigns each infrared output coordinate a visible input coordinate.
 Training scored the native infrared-to-visible coordinate map, but the screen instead tried to
 recover infrared coordinates by fixed-point inversion of the perimeter of an axis-aligned visible
-box. Nonlinear transformation, axis-aligned enclosure and inversion do not commute. This is a
-measurement error, not evidence that the immutable v2 result passed.
+box. Nonlinear transformation, axis-aligned enclosure and inversion do not commute. This
+mismatch does not by itself identify the cause of low accuracy or make the immutable v2 result pass.
 
 The content-addressed root-cause audit (`9a24eb17...9a565`) reran the exact 8-pair-per-sequence
 screen through both paths. The native target-to-source support check reaches 94.30% train and
 92.16% validation joint pass, while the legacy inverse-box path reproduces 29.30% and 22.57%.
-Mean full-field fold fractions are only 0.83% and 0.94%; a synthetic 2.1x affine scale also proves
+Mean full-field fold fractions are 0.83% and 0.94%; a synthetic 2.1x affine scale also proves
 that the legacy fixed-point solver can fail on a valid noncontractive map. Worst-case overlays are
-saved beside the audit. The corrected native path is substantially better but remains below the
-unchanged 95% gate, so v2 remains HOLD and is not reclassified.
+saved beside the audit. Native and inverse-enclosure scores are different diagnostics, not
+interchangeable accuracy estimates. Improved inversion barely changes real-data box agreement.
+Neither result establishes physical registration accuracy; v2 remains HOLD.
 
 Protocol v3 is a distinct pre-registered intervention:
 
@@ -133,6 +134,13 @@ consistency regularizer. References: [STN](https://proceedings.neurips.cc/paper/
 and [GradICON](https://openaccess.thecvf.com/content/CVPR2023/html/Tian_GradICON_Approximate_Diffeomorphisms_via_Gradient_Inverse_Consistency_CVPR_2023_paper.html).
 Because prior validation aggregates informed v3, even a v3 pass is an engineering qualification,
 not pristine independent confirmation; an external paired replication is still required.
+
+**Correction:** v3 also uses inconsistent endpoint/pixel-centre geometry for images versus
+points and cycles. Its historical gate is not a current authorization. The separately versioned
+[v4 protocol](registration_v4.md) fixes this mismatch without rewriting completed artifacts or
+the running v3 process. It uses stronger target-local engineering checks and keeps independent
+correspondence evidence and generator eligibility on HOLD. New thresholds are prospective
+engineering choices, not tuned passes or evidence of scientific accuracy.
 
 ## Label transfer audit (F4)
 

@@ -218,16 +218,16 @@ As of 2026-09-16:
   passed only 63.25%. The runner therefore correctly blocked the 199,798-pair exhaustive audit.
   This is a scientific qualification failure, not a CUDA or runner failure. The screen,
   checkpoint and thresholds are immutable; paired generator training remains **HOLD**.
-- **HOLD (direction audit; v3 frozen, execution pending):** a content-addressed root-cause audit
-  found that v2 training scored SuperFusion's native backward map (IR output coordinates to RGB
-  input coordinates), while the old screen numerically inverted the perimeter of an axis-aligned
-  RGB box. That operation is not the inverse of mapping and enclosing the IR box under a nonlinear
-  field. The corrected native support check reaches 94.30% train and 92.16% validation joint pass,
-  versus 29.30%/22.57% through the legacy inverse-box path. Because 92.16% is still below 95%, v2
-  is not reclassified. Protocol v3 is separately frozen: it trains both native SuperFusion
-  directions for 300 epochs/96,000 steps, composes them for inverse consistency, and gates both
-  directions plus coverage, positive Jacobian, cycle and edge evidence. Paired generator training
-  remains **HOLD** until the v3 screen and exhaustive audit pass.
+- **HOLD (v3 coordinate defect; distinct v4 correction):** the direction audit measured 94.30%/
+  92.16% train/validation native-box agreement versus 29.30%/22.57% inverse-box agreement.
+  These are different geometric tests, not a corrected estimate of the same registration
+  accuracy. Better numerical inversion barely changed the inverse-box pass rate. In addition,
+  v3 mixed endpoint image grids with pixel-centre point/cycle calculations. Historical v1--v3
+  code and artifacts are retained, but their gates must not authorize paired generator training.
+  The separate v4 path converts raw matcher fields once to pixel-centre displacements and uses
+  consistent image/point/box/cycle/Jacobian operations. Its engineering gate requires same-frame
+  bidirectional and target-local checks; even a pass cannot replace independent correspondence
+  evidence. **Generator training remains HOLD.** See [v4 correction and commands](docs/registration_v4.md).
 - **GO (Anti-UAV300 native-IR detector engineering smoke only):** the registration-independent
   adapter selects an endpoint-inclusive uniform grid before inspecting labels: eight frames from
   each of 160 training sequences and four from each of 67 validation sequences. It retains
@@ -516,7 +516,9 @@ make audit-antiuav300       # writes experiments/antiuav300_data_audit.json
 make audit-antiuav300-registration  # CPU; train fit, validation gate, report-only test
 bash scripts/run_antiuav300_registration.sh  # GPU; screen, then exhaustive audit only on pass
 bash scripts/run_antiuav300_registration_v2.sh  # GPU; frozen v2, then unchanged screen/full test
-bash scripts/run_antiuav300_registration_v3.sh  # GPU; bidirectional 300-epoch fit and corrected gate
+bash scripts/run_antiuav300_registration_v4.sh audit  # GPU; corrected audit, NOT training
+bash scripts/run_antiuav300_registration_v4_smoke.sh  # GPU; 3 FP32 optimizer steps, no weight saves
+# v1--v3 runners are historical only; their gates do not qualify paired generator training.
 make pilot-antiuav300-rfs   # train-only; writes experiments/antiuav300_rfs_pilot.json
 make prepare-antiuav300-ir-yolox  # CPU; uniform native-IR subset + full hash preflight
 AERO_ANTIUAV300_RUN_ID=antiuav300_native_ir_standard_seed0_e300_v1 \
