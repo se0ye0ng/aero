@@ -106,8 +106,10 @@ def _train(args: argparse.Namespace, cache_manifest: dict, project_root: Path) -
         if not 0 <= start_epoch <= EPOCHS:
             raise ValueError("invalid completed epoch in v4 resume checkpoint")
         print(f"resuming v4 after epoch {start_epoch}", flush=True)
-    elif args.output_dir.exists():
-        raise FileExistsError(f"refusing to overwrite v4 training directory: {args.output_dir}")
+    elif args.output_dir.exists() and any(args.output_dir.iterdir()):
+        raise FileExistsError(
+            f"refusing to overwrite non-empty v4 training directory: {args.output_dir}"
+        )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     log_path = args.output_dir / "train_log.jsonl"
     started = time.perf_counter()
