@@ -7,18 +7,111 @@
 > for infrared detector training data.
 >
 > Every claim about prior results is anchored to a citation in
-> [`docs/references.md`](docs/references.md). Nothing in this repository derives from
-> non-public material — see [Provenance](#provenance).
+> [`docs/references.md`](docs/references.md). A public release must exclude local
+> requirements, reviewer responses and assets without reviewed redistribution rights;
+> see [Provenance](#provenance).
 
 **Central hypothesis.** Across held-out generators and infrared domains, a class-conditional,
 sensor-aware radiometric diagnostic predicts the downstream change in detection AP better than
 perceptual metrics (FID / LPIPS / SSIM) and recent detection-data metrics (SDQM / CCDM). This is
 a hypothesis to test, not an assumed property of RFS.
 
+**Measured results, not the planned outcome:** the verified FLIR real-only baseline
+reaches 35.56% mAP@0.5:0.95. After 300 additional epochs, Anti-UAV300 registration
+passes 125/160 train midpoints with uniform sampling (78.125%) and 124/160 with
+failure-aware sampling (77.500%), below the unchanged 95% engineering threshold.
+Both pass 133/160 quarter-frame pairs (83.125%). These are single-seed training
+screens, not independent physical registration accuracy. No completed
+real+generated versus real+simulated detector comparison establishes the central
+hypothesis yet. See [Abstract, method, results and conclusion](docs/results.md)
+and the [remaining completion requirements](docs/project_completion_audit.md).
+The subsequent [tiled matching and spatial-support comparison](docs/detector_free_matching.md#tiled-matching-and-spatial-support)
+also fails to repair registration: whole-image and tiled matching each pass only
+1/16 train pairs, including after reciprocal filtering and a separate local
+interpolation alternative. These diagnostics are not additional detector results.
+
+**Additional source under evaluation:** MS² is being inspected as a separately
+authorized calibrated RGB–thermal training-source candidate. The first official
+training sequence passed image/depth extraction and native-format checks. A
+timestamp-aware ego-motion diagnostic substantially improves internal depth
+consistency, but does not independently validate image alignment. MS² is **not yet
+qualified**, and success in this road-driving domain cannot substitute for an
+Anti-UAV300 pass. See the [MS² evidence and limitations](docs/registration_ms2_source.md)
+and [completed image-matching controls](docs/registration_ms2_image_screen.md).
+The [residual and camera-sensitivity study](docs/registration_ms2_residuals.md)
+identifies additional improvements, but remains exploratory and does not approve
+generator training.
+An [inference-only pretrained stereo comparison](docs/registration_ms2_raft_stereo.md)
+completed all 96 GPU cases and passed saved-array verification. RAFT increases
+coverage but worsens aggregate common-point LiDAR agreement (thermal: 1.057 to
+1.225 equivalent disparity px); it is not approved as an accurate dense reference.
+The subsequent CPU image-patch comparison finds stronger local image agreement
+at stereo-estimated positions than LiDAR-predicted positions, but also finds
+high-scoring false matches in unrelated images. Neither score alone qualifies
+physical correspondence.
+The completed [LiDAR-reference sensitivity analysis](docs/registration_ms2_lidar_reference.md)
+does not support depth-encoding precision as the main explanation for residuals;
+registration and generator authorization remain on hold.
+
+---
+
+## Qualitative examples
+
+These are real outputs from the runs this repository records, not illustrations. Each panel
+pairs the model's prediction with the dataset's own annotation so the two can be read against
+each other. Both a passing and a failing case are shown, because the registration gate is
+currently **not** met and a figure set that showed only successes would misrepresent the result.
+
+**One caveat carried from the figures themselves:** the boxes are Anti-UAV300 *dataset
+annotations*, not pixel-level correspondence ground truth. They bound the target in each
+modality; they do not certify that a warped pixel landed where it physically belongs. That
+distinction is why these diagnostics do not clear the gate on their own.
+
+### Dense registration — trained warp against the annotation
+
+The dense matcher predicts a target-to-source flow; the visible frame is warped into the IR
+frame's geometry and scored against the IR annotation box. *Initial* is the shared-velocity
+initialization, *Trained* is the completed pilot.
+
+![Dense registration, passing case](assets/figures/registration_geometry_pass.png)
+
+Sequence `20190925_131530_1_2`. Training moves the warped RGB target into agreement with the
+IR annotation box, and the building edges in the background line up with the thermal structure.
+
+![Dense registration, regression case](assets/figures/registration_geometry_regression.png)
+
+Sequence `20190925_200320_1_7`, a night observation. Here the trained warp is *worse* than its
+initialization. Low-texture night frames give the matcher almost no background signal to fit,
+and this failure mode is a large part of why only 125/160 train midpoints pass against a 95%
+requirement.
+
+### Residual refinement
+
+![Residual refinement](assets/figures/registration_residual_pass.png)
+
+Sequence `20190925_130434_1_4`, comparing the continuation warp with the residual-learning
+variant. Both keep the target inside the annotation box; the residual arm does not produce the
+systematic improvement that would be needed to close the gate.
+
+### Detector-free cross-modal matching
+
+![LoFTR cross-modal matches](assets/figures/detector_free_loftr_matches.png)
+
+Pretrained LoFTR run inference-only on an RGB-IR pair (`20190925_101846_1_1`, frame 531).
+Green matches survive a 2 px reciprocal check, orange do not — and reciprocity is a
+self-consistency test, not correctness. The matches concentrate on the overlaid header text and
+the horizon, not on the target, which is the concrete reason whole-image and tiled matching each
+pass only 1/16 train pairs.
+
+Reproduce these figures with `scripts/render_registration_v7.py`,
+`scripts/render_registration_residual.py` and `scripts/probe_detector_free_matching.py`
+against the runs under `experiments/`.
+
 ---
 
 ## Contents
 
+- [Qualitative examples](#qualitative-examples) — what the model produces, pass and fail
 - [Why this repository exists](#why-this-repository-exists)
 - [Phases](#phases) — the implementation plan, phase by phase
 - [Current GO / NO-GO gate](#current-go--no-go-gate)
@@ -78,7 +171,37 @@ it beats the free option.**
 
 ### Current GO / NO-GO gate
 
-As of 2026-09-16:
+Current readiness as of **2026-10-02**:
+
+| Requirement | Verified state | Decision |
+|---|---|---|
+| CPU unit tests and Ruff code checks | 1,134 tests passed; `ruff check` and `git diff --check` passed | Execution checks passed, not scientific qualification |
+| Complete `make smoke` gate | `ruff format --check` fails: 72 source files need formatting; test formatting passes | Not passed in the current worktree |
+| FLIR real-only detector reference | Completed 300-epoch baseline; verified metrics and recorded replay | Available baseline, not a three-arm result |
+| Anti-UAV300 registration | Uniform/failure-aware midpoint passes 125/160 and 124/160; both below 95% | HOLD |
+| Additional MS² paired source | RAFT GPU comparison verified: greater coverage, worse common-point LiDAR agreement | HOLD; not a replacement Anti-UAV pass |
+| External landmark confirmation | Ungated MINIMA-RoMa: 96.54% macro PCK3 on the first 12-pair panel, but 85.64% on 7 new eligible pairs (83.48% excluding duplicate labels) | HOLD; large failures remain despite good earlier averages |
+| Anti-UAV300 RoMa follow-up | Original confidence gate: 0/16; ungated box proxy: 5/16, falling to 4/16 at higher processing resolution | HOLD; external accuracy does not transfer automatically |
+| Generator and controlled downstream benefit | Qualified paired export and completed three-arm comparison absent | HOLD |
+| Completed-method GitHub release | Source formatting, provenance/licensing review and missing scientific evidence remain | Not ready to publish as a validated method |
+
+Do not bulk-format source files while a frozen GPU experiment may be reading them:
+even formatting changes their recorded hashes. Preserve the exact experiment
+source first, then format and rerun the complete release checks separately.
+Do not rewrite an old manifest to claim that changed source was used in its run.
+See the [completion audit](docs/project_completion_audit.md) and
+[current results](docs/results.md) for evidence and limitations.
+The [external confirmation](docs/registration_local_warp_diagnostic.md#boundary-control-confirmation)
+and [dense matching comparison](docs/detector_free_matching.md#dense-fine-window-comparison)
+report the latest measured improvements and negative transfer results separately.
+The [RoMa confirmation](docs/detector_free_matching.md#confirmation-on-additional-images)
+separates independent landmark measurements from Anti-UAV box and cycle proxies.
+
+#### Historical engineering records
+
+The records below describe earlier checks and their individual scopes; they do
+not override the current readiness table. In particular, the historical 92-test
+smoke result is not the result of `make smoke` in the current worktree.
 
 - **GO:** `make smoke` passes with 92 tests. The data-free pilot separated faithful RFS (0.542)
   from degraded RFS (105.192), flagged inverted polarity as infinite mismatch, and
@@ -228,6 +351,82 @@ As of 2026-09-16:
   consistent image/point/box/cycle/Jacobian operations. Its engineering gate requires same-frame
   bidirectional and target-local checks; even a pass cannot replace independent correspondence
   evidence. **Generator training remains HOLD.** See [v4 correction and commands](docs/registration_v4.md).
+- **HOLD (MIND visual-anchor diagnostic):** a CPU-only 2D MIND-style probe recovered
+  320/320 known synthetic translations with contrast inversion. On one real RGB/IR
+  pair from each of 160 train sequences, however, minimizing MIND over small
+  corrections to frozen v6 decreased mean target-region box IoU by 0.0677 / 0.0389
+  in the two point-map directions. These are box proxies, not independent pixel
+  accuracy or results of MIND-augmented training. This does not support launching
+  a full run with MIND as the primary correspondence signal. See the
+  [MIND diagnostic and limitations](docs/registration_mind_probe.md).
+- **HOLD (pretrained correspondence screen):** native-derived 640px inference on
+  16 train pairs found both-target-box matches in 11/16 frames with XoFTR versus
+  1/16 with LoFTR outdoor (RGB-to-IR order). Only 7/16 XoFTR cases also had four
+  unique reciprocal pairs spanning at least 10% of both boxes; these descriptive
+  counts are not qualification thresholds. Shared screen text/timestamps create
+  spurious evidence, and independent point GT is still missing. XoFTR remains a
+  candidate, not a generator-training authorization. See
+  [detector-free matching results and visual checks](docs/detector_free_matching.md).
+- **HOLD (alternative registration diagnostics):** input-header removal reduced XoFTR
+  unrelated-pair matches from170 to7 but did not improve UAV alignment coverage.
+  Train160 MI and polarity-invariant NGCC candidate searches decreased mean target-box
+  IoU in both directions; global transforms fitted to XoFTR matches also remain inadequate.
+  Frozen whole-image DINOv2 provides sparse target hints, with no header-cropped frame
+  reaching four both-target-box patch matches on the16-pair panel.
+  These are bounded negative diagnostics, not failed full trainings or pixel-GT results.
+  Human review is not a prerequisite for further automatic repair experiments. Both
+  annotation forms are paused; free-choice practice landmarks cannot directly measure
+  inter-reviewer coordinate agreement. The active path is the
+  [automatic native-ROI, timing and SAM diagnostics](docs/registration_automatic_repair.md).
+  SAM's clipped-crop aspect/centre mismatch is repaired in a separate diagnostic;
+  [CPU replay and completed fresh SAM v2 GPU results](docs/registration_sam_v2.md)
+  distinguish coordinate fixes from still-unproven physical alignment.
+  A [matched-candidate CPU ablation](docs/registration_sam_pareto.md) prevents
+  worsening boundary error, but only six of16 actual pairs receive a nonidentity
+  correction; pseudo-mask improvement does not clear generator qualification.
+  The [v7 shared-velocity + optional MIND learning pilot](docs/registration_v7.md)
+  is implemented with matched budgets, CPU training smoke and a separate saved-result
+  verifier. Both10-epoch arms pass saved-artifact and matched-budget/data checks:
+  train midpoint joint pass improves from68/160 (42.5%) to114/160 (71.25%) for
+  geometry and115/160 (71.875%) with MIND, both below the95% threshold. MIND adds
+  one passing observation; this does not establish a generalization benefit. This is
+  not a replacement for the final300-epoch experiment or qualified registration.
+  A separate [image-conditioned residual pilot](docs/registration_residual_learning.md)
+  has also completed both10-epoch GPU arms with matched data and3,200 updates:
+  predictor continuation passes115/160 (71.875%) and the residual head117/160
+  (73.125%) on the same train midpoint screen, versus114/160 initially. The
+  residual head wins five and loses three observations relative to continuation;
+  neither reaches95% or authorizes held-out engineering inference or generation.
+  A CPU scale-response diagnostic on eight preselected train cases found that
+  1.25x vertical RGB scaling produces only about1.07x median predicted box-height
+  scaling in both models (seven fully supported box measurements). This is a
+  synthetic equivariance diagnostic, not physical accuracy or a proven failure
+  cause. A matched24-update CPU fit on four selected train observations was then
+  run: the scale-consistency candidate passes111/160 original train midpoints,
+  versus101/160 for its geometry-only control and117/160 before either tiny fit.
+  It reduces the control's regression but does not improve the starting model;
+  this configuration is not adopted or qualified. Details and limitations are
+  in the residual-pilot report above.
+  A subsequent matched CPU sweep over all160 train sequence midpoints avoids
+  the large tiny-panel regression but shows no clear scale-loss benefit: both
+  arms reach118/160 midpoint passes; on different train frames excluded from
+  this sweep, control passes114/160 and scale115/160, versus115/160 initially.
+  These are train diagnostics, not independent validation or qualification.
+  A subsequent fit-capacity check fits four selected alignment-only failures
+  successfully with the unchanged shared head/loss (4/4 joint passes), but its
+  full midpoint pass count falls117→69 and quarter-frame count115→72. This is
+  narrow-panel overfitting, not a repair; that head is rejected and the original
+  completed checkpoints are preserved. A subsequent200-update CPU replay fit
+  reaches118/160 midpoints and116/160 quarter frames; adding output preservation
+  reaches120/160 and112/160 respectively. Preservation is not adopted because
+  its midpoint gain does not transfer across time positions. Replay remains a
+  hypothesis, not a qualified repair. A new [uniform versus failure-aware
+  sampling comparison](docs/registration_replay.md) provides separate resumable
+  GPU commands for300 additional epochs per arm from the preserved GPU residual
+  initializer. Its implementation and scientific outcome are separate: no
+  completed300-epoch replay result or generator approval is claimed.
+  Existing practice responses are preserved, not promoted to GT. See the
+  [consolidated results and next required evidence](docs/registration_alternatives_results.md).
 - **GO (Anti-UAV300 native-IR detector engineering smoke only):** the registration-independent
   adapter selects an endpoint-inclusive uniform grid before inspecting labels: eight frames from
   each of 160 training sequences and four from each of 67 validation sequences. It retains
@@ -279,6 +478,16 @@ As of 2026-09-16:
 
 This gate distinguishes a runnable scaffold from a result that can support a scientific claim.
 
+**Generator implementation boundary:** the train-only DiffV2IR conditioning dataset
+and isolated inference interface are CPU-tested. A tiny, randomly initialized
+upstream VAE/CLIP/diffusion training-and-resume CPU test also passes after fixing
+a Lightning1.9.5 hook-signature incompatibility in a separate adapter. It uses
+synthetic fixtures, not registered research data or pretrained weights.
+Full pretrained-model loading/GPU sampling remain unverified; the real-data
+diffusion training launcher and qualified paired-frame export are not yet
+integrated. A configured checkpoint or prepared plan is not a
+working generator. See [the integration contract and remaining work](docs/diffv2ir_integration.md).
+
 ---
 
 ### Phase 0 — scaffold and instrumentation
@@ -304,10 +513,11 @@ Class-conditioned RFS aggregation and a frozen undefined-statistic policy remain
 | Anti-UAV300 native-IR YOLOX adapter | `src/aero_ir/data/antiuav300_ir.py`, `src/aero_ir/detect/yolox_antiuav300_exp.py` | smoke and 20-epoch diagnostic passed; corrected 300-epoch standard schedule CPU-verified, GPU run pending |
 | Anti-UAV410 external detection adapter | `src/aero_ir/data/antiuav410.py`, `scripts/audit_antiuav410.py`, `scripts/prepare_antiuav410.py` | implemented; local archive/test manifest passed; 64 invalid test positives excluded and counted |
 
-**Exit criterion met.** `make smoke` passes, and the Phase 0 pilot passes on the intended RTX
-4090 compute device. The smoke test needs neither GPU nor data; the pilot times a sensor-chain
-forward/backward pass and checks that RFS separates faithful, degraded and polarity-inverted
-fixtures. The recorded CUDA result has finite gradients and includes timing and peak-memory data.
+**Historical pilot criterion met; current release check incomplete.** The recorded Phase 0
+pilot passed on the intended RTX 4090, with finite gradients, timing and peak-memory data.
+It checks RFS separation on faithful, degraded and polarity-inverted fixtures. The current
+worktree passes CPU tests but does not pass the complete `make smoke` target because source
+formatting fails; see the current gate above. The smoke test requires neither GPU nor data.
 
 ---
 
@@ -850,7 +1060,8 @@ src/aero_ir/
   deploy/                 ONNX / INT8 / latency
   scene3d/                N3 scaffold + plan.md
 scripts/                  dataset access, grid expansion, report, run verification
-tests/                    79 tests; no GPU or dataset required
+tests/                    1,134 tests; no GPU or dataset required
+assets/figures/           the qualitative figures shown above
 ```
 
 ## Mapping to industry requirements
@@ -869,7 +1080,8 @@ This table exists so a reviewer can find the corresponding code in one step.
 
 ## Data
 
-Public datasets only. No proprietary imagery, labels, or specifications are used or referenced.
+The reported experiments use public datasets under their providers' access terms.
+Local private requirements are not dataset assets and must not enter a public release.
 
 | Dataset | Role | Phase |
 |---|---|---|
@@ -880,10 +1092,53 @@ Public datasets only. No proprietary imagery, labels, or specifications are used
 
 See [`docs/datasets.md`](docs/datasets.md) for licences and access.
 
+### Getting the data
+
+Nothing large is stored in this repository. Every dataset is gated by its provider's own terms,
+so the scripts below print the access route and then verify the layout you placed; they do not
+silently download gated imagery. Run them from the repository root.
+
+```bash
+# where everything lands (default: ./data)
+export AERO_DATA_ROOT=/mnt/data
+
+# --- detector anchor -------------------------------------------------------
+export AERO_FLIR_ROOT="$AERO_DATA_ROOT/FLIR_ADAS_v2"
+bash scripts/download_flir.sh          # request form, then layout + split counts
+
+# --- paired development and external IR evaluation -------------------------
+export AERO_ANTIUAV300_ROOT="$AERO_DATA_ROOT/Anti-UAV300"
+export AERO_ANTIUAV410_ROOT="$AERO_DATA_ROOT/Anti-UAV410"
+bash scripts/download_antiuav.sh       # both roots, sequence-disjoint
+
+# --- additional candidate source (CC BY-NC-SA 3.0, ~1 TB full release) -----
+export AERO_MS2_ROOT="$AERO_DATA_ROOT/MS2"
+bash scripts/download_ms2.sh           # official download scripts live on the dataset site
+.venv/bin/python -m scripts.fetch_ms2_metadata   # pinned split lists only, no imagery
+```
+
+Pretrained diagnostic checkpoints (~2.3 GB) *are* fetched directly, because each has a stable
+public URL. Every file is verified against the SHA-256 of the artifact these experiments
+actually ran against, and a mismatch aborts:
+
+```bash
+bash scripts/download_pretrained.sh
+```
+
+Two checkpoints have no stable direct URL and are fetched by hand from their official releases:
+`weights_xoftr_640.ckpt` ([XoFTR](https://github.com/OnderT/XoFTR)) and
+`raftstereo-middlebury.pth` ([RAFT-Stereo](https://github.com/princeton-vl/RAFT-Stereo)).
+
+Derived caches are rebuilt rather than shipped. The 52 GB Anti-UAV300 registration cache is
+regenerated by `scripts/run_antiuav300_registration_v2.sh`, and its retained
+`manifest.json` carries a per-shard SHA-256 so the rebuild is checkable. See
+[`docs/pruned_artifacts.md`](docs/pruned_artifacts.md) for what was removed and how each item
+comes back.
+
 ## Provenance
 
-This repository is built from public sources only, and is written so that fact is checkable
-rather than merely asserted.
+Public releases require checkable source provenance and an explicit redistribution review.
+The existence of a local file or a public download link is not, by itself, release approval.
 
 - **Prior results** are cited in [`docs/references.md`](docs/references.md). A statement about
   what previous work found is not made in this repository without a reference beside it.
@@ -892,9 +1147,10 @@ rather than merely asserted.
 - **Baselines** — YOLOX, DiffV2IR and PID have public code/checkpoint routes. Exact revisions and
   artifact hashes must be pinned in every run. E1 starts from the documented YOLOX 300-epoch
   scratch recipe but is an IR protocol transfer, not a reproduction of the DIMO experiment.
-- **No proprietary material** of any kind: no imagery, labels, sensor specifications,
-  requirement documents, internal results, or organisation names. This is enforced by
-  `.gitignore` and stated as the first rule in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- **Exclude proprietary material**: imagery, labels, sensor specifications,
+  requirement documents, internal results and organisation names from non-public sources.
+  `.gitignore` reduces accidental additions but cannot replace review of the staged files;
+  see the first rule in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Reproducibility
 

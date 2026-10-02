@@ -1,0 +1,14 @@
+kind: registration_alignment_violation_cpu_v1
+seed: 0
+device: cpu
+initial_arm: uniform
+updates_per_arm: 200
+batch_size: 8
+learning_rate: 0.00001
+weight_decay: 0.00001
+gradient_clip: 5.0
+auxiliary_weights:
+  geometry_only: 0.0
+  geometry_plus_violation: 1.0
+fit_panel: all_train_midpoints
+probe_panel: all_train_quarter_frames

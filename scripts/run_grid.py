@@ -1,4 +1,4 @@
-"""Expand an experiment's sweep block into concrete runs.
+"""Preview an experiment's sweep block; this is not an execution backend.
 
 The grid lives in ``configs/experiment/*.yaml``, never in this script. This file only
 enumerates it, so that what was run is always readable from configuration.
@@ -48,6 +48,11 @@ def main() -> None:
     ap.add_argument("--configs", default="configs")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+    if not args.dry_run:
+        ap.error(
+            "grid execution is not implemented; use --dry-run to inspect the schedule. "
+            "No experiment was launched. Use the documented dedicated experiment runners."
+        )
 
     path = Path(args.configs) / "experiment" / f"{args.experiment}.yaml"
     cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -62,8 +67,6 @@ def main() -> None:
         overrides = " ".join(f"{k}={v}" for k, v in run.items())
         cmd = f"python -m aero_ir.cli run experiment={args.experiment} {overrides}"
         print(f"[{i:03d}] {cmd}")
-        if not args.dry_run:
-            pass  # TODO: dispatch via hydra multirun or a job launcher
 
 
 if __name__ == "__main__":

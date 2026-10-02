@@ -1,0 +1,28 @@
+kind: external_boundary_confirmation_v1
+dataset: UAV-TIRVis
+repository: https://gitlab.upb.ro/etti/dcae-public/arh/research/uav-tirvis
+commit: b6b914123bfe3074af8683476a1d1929f7a6cdc5
+api: https://gitlab.upb.ro/api/v4/projects/13575
+scenes: [Mountain, MountainResort, ResidentialArea, Seaside]
+# Fetch first four numeric IDs; ID 1 is excluded from confirmation scoring.
+samples_per_scene: 4
+cache: experiments/external/uav_tirvis_b6b91412_confirmation12
+development_sample_ids: [1]
+confirmation_sample_ids: [2, 3, 4]
+expected_confirmation_pairs: 12
+long_side: 640
+method: xoftr
+denser: false
+xoftr_weights: experiments/external/weights_xoftr_640.ckpt
+xoftr_vendor: experiments/external/XoFTR
+local_config: configs/experiment/registration_external_local_warp_cpu.yaml
+baseline: original_grid_controls
+candidate: original_grid_plus_accepted_convex_hull_vertices
+candidate_source: scripts/probe_external_boundary_controls.py
+candidate_sha256: ae79b8a76fc44882deb05091079cd8be211c507d172f08f8681f794b7a70ca76
+development_report: experiments/registration_external_boundary_controls_01/report.json
+development_report_sha256: 8f7a82429888cbd06f193811b89b1c876c97baf8e2b3f28e57c6441d261ce42a
+reference_use: evaluation_only_after_fitting
+thresholds_thermal_file_pixels: [1.0, 3.0, 5.0, 10.0]
+qualification: same_scene_unused_pair_confirmation_not_antiuav_or_generator_approval
+licensing: no_raw_assets_or_reference_labels_in_git_release

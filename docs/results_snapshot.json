@@ -1,0 +1,122 @@
+{
+  "central_hypothesis_status": "not_tested_by_a_completed_three_arm_experiment",
+  "exporter_source_sha256": "0642d65a5885540291cebce8ce58f5cafd735855e7c0874bb96ddecbde0e1f86",
+  "flir_real_only": {
+    "detections": 57114,
+    "epochs": 300,
+    "images": 1144,
+    "input_sources_verified_from_original_git": [
+      "input__pyproject.toml",
+      "input__src__aero_ir__detect__yolox_evaluator.py"
+    ],
+    "manifest_sha256": "3fd812426c2950762ad84cc1e2a2e73c426371add66733d131901a5644b196ea",
+    "metrics_fraction": {
+      "map_50": 0.5795291490668554,
+      "map_50_95": 0.3556466486449762,
+      "mar_50": 0.7419344524214649,
+      "mar_50_95": 0.47463886838179165
+    },
+    "original_source_commit": "6f9b7dc3e716f23c8a7079915cf2f65379ab7915",
+    "per_class_fraction": {
+      "bike": {
+        "ap_50": 0.4681780542287394,
+        "ap_50_95": 0.2808123885283764,
+        "ar_50": 0.6882352941176471,
+        "ar_50_95": 0.4158823529411764,
+        "category_id": 2
+      },
+      "bus": {
+        "ap_50": 0.5894576316742859,
+        "ap_50_95": 0.4154058955382075,
+        "ar_50": 0.6759776536312849,
+        "ar_50_95": 0.4776536312849163,
+        "category_id": 6
+      },
+      "car": {
+        "ap_50": 0.8511944665760552,
+        "ap_50_95": 0.5803423823308718,
+        "ar_50": 0.9195289499509323,
+        "ar_50_95": 0.6316416654983877,
+        "category_id": 3
+      },
+      "motor": {
+        "ap_50": 0.6218098022939983,
+        "ap_50_95": 0.32124910828864256,
+        "ar_50": 0.7454545454545455,
+        "ar_50_95": 0.43454545454545457,
+        "category_id": 4
+      },
+      "person": {
+        "ap_50": 0.8079958858104945,
+        "ap_50_95": 0.44318671521444614,
+        "ar_50": 0.9006711409395973,
+        "ar_50_95": 0.5315883668903804,
+        "category_id": 1
+      },
+      "truck": {
+        "ap_50": 0.13853905381755904,
+        "ap_50_95": 0.09288340196931266,
+        "ar_50": 0.5217391304347826,
+        "ar_50_95": 0.3565217391304348,
+        "category_id": 8
+      }
+    },
+    "replayed_during_this_export": false,
+    "run_id": "flir_real_only_full_seed0_v2",
+    "split": "validation"
+  },
+  "kind": "aero_public_aggregate_results",
+  "limitations": [
+    "Detection AP and registration pass rates are different metrics on different datasets.",
+    "Registration pilots are train diagnostics, not held-out physical accuracy.",
+    "Artifact verification does not replay GPU inference or training.",
+    "No completed300-additional-epoch replay result is included in this frozen snapshot.",
+    "Source hashes are provenance, not a substitute for access to original artifacts."
+  ],
+  "registration_pilots": {
+    "architecture_and_learning_rate_both_differ": true,
+    "arms": {
+      "predictor_continuation": {
+        "checkpoint_sha256": "63c6b32eb8b4d7406cc10207df3bdba4795db1a2d65fd686bc811b316b956afe",
+        "epochs": 10,
+        "evaluated_pairs": 160,
+        "joint_pass_rate": 0.71875,
+        "joint_passes": 115,
+        "learning_rate": 1e-05,
+        "optimizer_steps": 3200
+      },
+      "residual_head": {
+        "checkpoint_sha256": "86ba5a3d068645a3275934ed9572bd8502075e32b477b2ed9527d05014e89dcb",
+        "epochs": 10,
+        "evaluated_pairs": 160,
+        "joint_pass_rate": 0.73125,
+        "joint_passes": 117,
+        "learning_rate": 0.0001,
+        "optimizer_steps": 3200
+      }
+    },
+    "dataset": "Anti-UAV300",
+    "independent_physical_accuracy_established": false,
+    "initial_joint_pass_rate": 0.7125,
+    "matched_training_data_and_update_count": true,
+    "minimum_joint_pass_rate": 0.95,
+    "selection": "one midpoint per sequence",
+    "split": "train"
+  },
+  "registration_qualification": "hold_not_qualified",
+  "schema_version": 1,
+  "scope": "verified_saved_artifacts_not_new_training_or_inference",
+  "source_artifacts_sha256": {
+    "experiments/registration_residual_pilot_e10_seed0/comparison.json": "0d38bcc47b4d2500efed9fa22fa6691d09a4a1098d7decec4fb75b5dc099fc42",
+    "experiments/registration_residual_pilot_e10_seed0/predictor_continuation/final_train_screen.json": "527e0f8177285201ea5848b9cc9fd6e89b8c992079f9ca029d1525c998e0d1fe",
+    "experiments/registration_residual_pilot_e10_seed0/predictor_continuation/run_spec.json": "ac751ec66c7fd5f44b2f01daf6b14d5c4b879ce63c1880ae67b7256acbcf2742",
+    "experiments/registration_residual_pilot_e10_seed0/residual_head/final_train_screen.json": "540d165a72d9c9e680ccc7ec9a468fa0527065d2103f90e1c33d239a080e6939",
+    "experiments/registration_residual_pilot_e10_seed0/residual_head/run_spec.json": "b7b21994a36ceade1f06144f06bf3a76f85706454e161e946285912615f6e158",
+    "experiments/yolox_runs/flir_real_only_full_seed0_v2/run_manifest.json": "eac9c61aec106e056695f447ef08450faf3715753dcb9bdffe419072222e0903"
+  },
+  "three_arm_detector_comparison": {
+    "generated_data_ap_improvement": null,
+    "real_plus_generated": "not_completed",
+    "real_plus_simulated": "not_completed"
+  }
+}

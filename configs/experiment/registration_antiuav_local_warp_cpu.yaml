@@ -1,0 +1,8 @@
+kind: antiuav_image_only_local_consensus_tps_transfer_v1
+source_report: experiments/xoftr_overlay_train16_01/report.json
+source_report_sha256: 09081366f56d022c7414b83b416d81837bafd37435e88bf6e554d9df2ecd18ef
+local_warp_config: configs/experiment/registration_external_local_warp_cpu.yaml
+dataset_root: /lustre/winston1214/dataset/Anti-UAV300
+conditions: [raw_postfilter, input_header_crop]
+box_iou_threshold: 0.6
+qualification: train_only_box_proxy_not_physical_qualification

@@ -1,0 +1,22 @@
+kind: roma_fresh_same_scene_confirmation_v1
+dataset: UAV-TIRVis
+repository: https://gitlab.upb.ro/etti/dcae-public/arh/research/uav-tirvis
+commit: b6b914123bfe3074af8683476a1d1929f7a6cdc5
+api: https://gitlab.upb.ro/api/v4/projects/13575
+scenes: [Mountain, MountainResort, ResidentialArea, Seaside]
+samples_per_scene: 6
+sample_count_overrides: {Seaside: 5}
+cache: experiments/external/uav_tirvis_b6b91412_fresh8
+evaluation_sample_ids: [5, 6]
+excluded_missing_reference: [Seaside/6]
+expected_evaluation_pairs: 7
+previously_observed_sample_ids: [1, 2, 3, 4]
+selection: fixed numeric IDs before reading their landmark errors
+coarse_resolution: 560
+fine_resolution: 864
+precision: float32
+thresholds_native_target_pixels: [1.0, 3.0, 5.0, 10.0]
+branches: [fixed_confidence_ge_half, ungated_diagnostic]
+reference_use: scoring_only_no_fitting_or_selection
+qualification: diagnostic_not_antiuav_or_generator_approval
+licensing: do_not_redistribute_raw_assets_or_labels

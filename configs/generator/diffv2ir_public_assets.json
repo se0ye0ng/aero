@@ -1,0 +1,39 @@
+{
+  "kind": "official_diffv2ir_asset_catalog_not_download_or_training_approval",
+  "metadata_checked_date": "2026-09-21",
+  "source_repository": "https://github.com/LidongWang-26/DiffV2IR",
+  "source_revision": "495947eaad0c2f3bb380ddf5f8820c2b1443e23f",
+  "distribution_repository": "Lidong26/IR-500K",
+  "distribution_revision": "fa0b38d18c8326e87f7de135869b8717068fd7dd",
+  "metadata_url": "https://huggingface.co/api/datasets/Lidong26/IR-500K/tree/fa0b38d18c8326e87f7de135869b8717068fd7dd/IR-500k/finetuned_checkpoints",
+  "hash_origin": "official distribution Git LFS object SHA256; not locally downloaded/verified bytes",
+  "selected_for_experiment": null,
+  "checkpoint_training_data_exposure": "not_established",
+  "weight_license_review": "pending; source-code Apache-2.0 is not sufficient evidence",
+  "assets": [
+    {
+      "name": "after_phase_1.ckpt",
+      "path": "IR-500k/finetuned_checkpoints/after_phase_1.ckpt",
+      "size_bytes": 2132869203,
+      "sha256": "9745946c37d2af538b13bd5c680b185da4253734fea053947dcc8b8cc1efcd2a"
+    },
+    {
+      "name": "after_phase_2.ckpt",
+      "path": "IR-500k/finetuned_checkpoints/after_phase_2.ckpt",
+      "size_bytes": 7704016743,
+      "sha256": "177d039996054c8a513c84296f7b255656817b7f296e60d8a605874ca9621a80"
+    },
+    {
+      "name": "FLIR.ckpt",
+      "path": "IR-500k/finetuned_checkpoints/FLIR.ckpt",
+      "size_bytes": 7704016434,
+      "sha256": "4c4b36cdaa8d8e1ef512291bf1e83c2a82baef0adb3c837ff4dd0802b2a7fc12"
+    },
+    {
+      "name": "M3FD.ckpt",
+      "path": "IR-500k/finetuned_checkpoints/M3FD.ckpt",
+      "size_bytes": 7704016743,
+      "sha256": "dcb838964eca6386f78248d73d335bca8ead5463222058d3e924fafdf8e8efb1"
+    }
+  ]
+}

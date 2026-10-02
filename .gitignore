@@ -19,6 +19,9 @@ wandb/
 *.docx
 *_internal*
 *confidential*
+# Local user-supplied requirements mention NDA-governed material; not a public asset.
+# Keep the local file; explicit redistribution/provenance review is required first.
+docs/inspiration.md
 
 # --- python ---
 __pycache__/
@@ -35,3 +38,6 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# --- agent/orchestration local state ---
+.omc/

@@ -5,4 +5,10 @@ guidance_scale: 7.5
 steps: 50
 use_segmentation: true
 caption_source: blip
-batch_size: 8
+# Official guidance implementation samples one image through four CFG branches.
+batch_size: 1
+# Explicitly configure reviewed local assets and a separate runtime before sampling.
+runtime_python: null
+upstream_root: experiments/external/DiffV2IR
+checkpoint_sha256: null
+clip_root: null

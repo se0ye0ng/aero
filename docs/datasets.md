@@ -1,7 +1,10 @@
 # Datasets
 
 Public data only. Each entry lists the access route and the licence that governs it; check
-the licence before redistribution. No dataset is vendored into this repository.
+the licence before redistribution. No dataset archive, split, annotation file or bulk imagery
+is vendored into this repository. The single exception is the four qualitative figures under
+`assets/figures/`, which display Anti-UAV300 frames for illustration and are recorded in
+[`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md).
 
 | Dataset | Regime | Access |
 |---|---|---|
@@ -13,10 +16,16 @@ the licence before redistribution. No dataset is vendored into this repository.
 | Anti-UAV300 | paired RGB/IR UAV tracking data for generator development | project GitHub |
 | Anti-UAV410 | IR-only UAV tracking benchmark for external thermal evaluation | project GitHub |
 | CST Anti-UAV | tiny UAV thermal tracking | conference workshop release |
+| MS² Multi-Spectral Stereo | calibrated RGB/NIR/thermal stereo with LiDAR depth; candidate additional source, **not yet qualified** | dataset website; CC BY-NC-SA 3.0 |
 
 `scripts/download_*.sh` prints the access route and verifies the directory layout after manual
 placement. Dataset-specific audit targets record archive checksums and content integrity.
 Nothing is downloaded automatically from a gated source.
+
+The one script that does download directly is `scripts/download_pretrained.sh`, which fetches
+pretrained diagnostic checkpoints from their official public URLs and verifies each against the
+SHA-256 of the artifact these experiments ran against. Checkpoints are models, not datasets, and
+none is redistributed here.
 
 FLIR mirrors/releases in circulation do not all expose the same still-image count. Every run
 must therefore record the actual COCO counts and source-archive hash; the dataset name alone is

@@ -1,0 +1,31 @@
+kind: ms2_calibrated_image_screen_v1
+native_report: experiments/ms2_native_screen_01/report.json
+native_report_sha256: 9bf321e4d342b2e65654e42814f4f7246e9adee03428fdc94452e3b35f0e9a97
+motion_report: experiments/ms2_ego_motion_probe_01/report.json
+motion_report_sha256: 4fb3cb959761172cd12386fc7945a2b729eed499af704c0e035036a9d07f491b
+plan: experiments/ms2_train_screen_plan_01/plan.json
+sync_report: experiments/ms2_train_screen_sync_01_report.json
+depth_report: experiments/ms2_train_screen_depth_01_report.json
+sync_root: experiments/ms2_train_screen_sync_01
+depth_root: experiments/ms2_train_screen_depth_01
+odom: experiments/external/ms2_first_train_archives/odom.prefix.tar.bz2
+vendor: experiments/external/XoFTR
+vendor_commit: e0fbea431b30be9742effbf5577c90aa8eb938f9
+models:
+  xoftr_640:
+    path: experiments/external/weights_xoftr_640.ckpt
+    sha256: 6e7f24e553f76746ef49061bf44c7d11252e56057470d1421bcd4e6506af3a67
+  minima_xoftr:
+    path: experiments/external/minima_796e772/minima_xoftr.ckpt
+    sha256: 551eaa814713b3c60ca380eda022be9b7609e51737302e12370f8943a1e864d7
+long_side: 640
+thermal_input_window: pooled_train16_percentile_0.5_99.5
+unrelated_frame_cyclic_offset: 8
+local_config: configs/experiment/registration_external_local_warp_cpu.yaml
+maximum_controls: 144
+control_policy: fps
+pose_max_extrapolation_ns: 20000000
+reference_depth_consistency_radius_px: 1.0
+reference_depth_consistency_abs_m: 0.03
+reference_target_native_pixel_thresholds: [1.0, 3.0, 5.0, 10.0]
+qualification: train_only_calibrated_reference_diagnostic_not_image_GT_or_generator_approval

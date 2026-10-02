@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>드론 부위 식별 연습 — GT 작성 아님</title>
+<style>
+body{font:17px/1.7 system-ui,sans-serif;max-width:1120px;margin:24px auto;padding:0 16px;color:#17212b}
+h1,h2{line-height:1.35}section{border:1px solid #ccd5df;border-radius:12px;padding:20px;margin:20px 0}
+.notice{background:#fff3d6;padding:14px;border-left:5px solid #b86b00}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}svg{width:100%;height:auto;background:#f4f7fa}
+canvas{width:100%;height:auto;display:block;cursor:crosshair;background:#e8edf2}
+label{display:block;margin:10px 0}button,select,input,textarea{font:inherit;padding:6px;max-width:100%;box-sizing:border-box}
+button{cursor:pointer;margin:5px}table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid #ddd;padding:8px}
+.small{font-size:14px;color:#4f5a65}.tag{color:#9b4200;font-weight:700}textarea{width:100%}
+</style>
+<h1>같은 드론 부위를 알아볼 수 있나요?</h1>
+<p class="notice">이 자료는 <b>6쌍의 연습·관측 가능성 확인용</b>입니다. 정답 좌표(GT)를 만드는 단계가 아닙니다.
+안 보이거나 모르겠다는 응답도 중요합니다. 모르는 부위를 추측해서 클릭하지 마세요.</p>
+<section><h2>1. 먼저 부품 이름을 익힙니다</h2>
+<p>아래 그림은 설명을 위해 그린 일반적인 4개 모터 드론입니다. 실제 사진의 기종·방향·부품 배치를 확정하는 그림이 아닙니다.</p>
+<div class="grid">
+<div><svg viewBox="0 0 520 400" role="img" aria-label="일반적인 쿼드콥터 위쪽 모습: 중앙 동체에서 팔이 뻗고 끝에 모터와 프로펠러가 있다">
+<g stroke="#538094" stroke-width="22"><path d="M250 200 L140 100 M250 200 L370 100 M250 200 L140 290 M250 200 L370 290"/></g>
+<rect x="213" y="158" width="80" height="88" rx="24" fill="#59718d"/>
+<g fill="#e39b38" stroke="#895013" stroke-width="2"><circle cx="140" cy="100" r="18"/><circle cx="370" cy="100" r="18"/><circle cx="140" cy="290" r="18"/><circle cx="370" cy="290" r="18"/></g>
+<g fill="#64bbab" fill-opacity=".65"><ellipse cx="140" cy="100" rx="77" ry="12" transform="rotate(-25 140 100)"/><ellipse cx="370" cy="100" rx="77" ry="12" transform="rotate(25 370 100)"/><ellipse cx="140" cy="290" rx="77" ry="12" transform="rotate(25 140 290)"/><ellipse cx="370" cy="290" rx="77" ry="12" transform="rotate(-25 370 290)"/></g>
+<g fill="#17212b" font-size="19"><text x="190" y="32">동체에서 본 위쪽 개념도</text><text x="20" y="170">프로펠러(날개)</text><text x="315" y="186">팔(암)</text><text x="210" y="270">동체</text><text x="320" y="366">모터 위치</text></g>
+<g stroke="#17212b" stroke-width="2"><path d="M110 150 L93 118 M336 193 L319 147 M240 253 L240 238 M367 344 L370 308"/></g>
+</svg></div>
+<div><svg viewBox="0 0 520 400" role="img" aria-label="옆쪽 개념도: 프로펠러 아래 모터가 있고 모터는 팔에 장착된다">
+<text x="120" y="32" font-size="19">한쪽 모터 주변을 옆에서 보면</text>
+<rect x="40" y="270" width="305" height="24" fill="#538094"/>
+<rect x="262" y="210" width="86" height="60" rx="10" fill="#e39b38" stroke="#895013" stroke-width="2"/>
+<rect x="299" y="167" width="12" height="46" fill="#64717e"/>
+<ellipse cx="305" cy="171" rx="130" ry="11" fill="#64bbab"/>
+<circle cx="305" cy="171" r="10" fill="#64717e"/>
+<g fill="#17212b" font-size="19"><text x="180" y="116">프로펠러: 회전하는 날개</text><text x="350" y="237">모터 외형</text><text x="80" y="332">팔: 동체와 모터를 연결</text><text x="50" y="370">회전축 중심 ≠ 날개 끝 ≠ 가장 밝은 열점</text></g>
+<g stroke="#17212b" stroke-width="2"><path d="M304 124 L305 154 M353 231 L343 231 M170 306 L170 286"/></g>
+</svg></div></div>
+<ul><li><b>모터:</b> 프로펠러를 돌리는 구동 부품입니다. 내부 회전자·고정자 같은 세부 구조를 이 영상에서 찾을 필요는 없습니다.</li>
+<li><b>프로펠러:</b> 모터에 연결된 회전 날개입니다. 날개 끝은 회전·흐림 때문에 안정적인 대응점이 아닐 수 있습니다.</li>
+<li><b>모터/회전축 중심:</b> 날개가 회전하는 축의 위치입니다. 실제 영상에서 중심이 구별될 때만 선택합니다. 모터 외형이나 축이 가려져 있으면 모른다고 답하세요.</li>
+<li><b>팔(암), 동체, 착륙 다리:</b> 각각 모터를 잇는 구조, 중앙 몸체, 착륙을 지지하는 구조입니다. 기종에 따라 형태와 보이는 정도가 다릅니다.</li></ul>
+<p>부품 설명 참고: <a href="https://ardupilot.org/copter/docs/what-you-need.html" target="_blank" rel="noopener">ArduPilot 공식 구성 요소 안내</a>.
+링크는 선택 사항이며, 이 연습은 인터넷 없이도 사용할 수 있습니다.</p>
+</section>
+<section><h2>2. 드론이 보이는 것과 같은 부위가 보이는 것은 다릅니다</h2>
+<ul><li>흰색 꺾인 선·십자선·문자·시간은 화면 오버레이입니다. 드론 부위가 아닙니다.</li>
+<li>IR에서 밝게 보이는 점이 모두 모터라는 뜻은 아닙니다. 색이나 밝기만으로 부품을 결정하지 마세요.</li>
+<li>두 영상의 ‘화면 왼쪽 모터’가 같은 모터라고 단정하지 마세요. 시점 때문에 좌우와 가림이 달라질 수 있습니다.</li>
+<li>드론의 팔과 동체가 연결되는 구조까지 따라가도 같은 부위인지 모르겠다면 <b>확신할 수 없음</b>이 올바른 응답입니다.</li>
+<li>확대는 원래 픽셀을 크게 보여줄 뿐, 없던 구조를 복원하지 않습니다.</li></ul>
+<label>확인 ① 흰색 꺾인 선은 무엇인가요? <select id="quiz1"><option value="">선택</option><option value="overlay">화면 표시(드론 부위 아님)</option><option value="drone">드론의 팔</option><option value="unknown">모르겠음</option></select></label>
+<label>확인 ② IR의 가장 밝은 점을 모터 중심으로 찍어도 되나요? <select id="quiz2"><option value="">선택</option><option value="no">그것만으로는 판단할 수 없음</option><option value="yes">항상 가능</option><option value="unknown">모르겠음</option></select></label>
+<button id="quizcheck">설명 확인</button><p id="quizfeedback"></p>
+</section>
+<section><h2>3. 실제 영상 6쌍으로 연습합니다</h2>
+<p>각자 답한 후 파일을 저장하세요. 다른 사람의 점이나 답을 먼저 보지 마세요. 이 단계에는 uncertainty radius나 자유 입력 landmark ID가 없습니다.</p>
+<label>검토자 이름 또는 별칭 <input id="reviewer" autocomplete="off"></label>
+<button id="previous">이전 영상</button><select id="pairselect"></select><button id="next">다음 영상</button>
+<label>화면 <select id="viewmode"><option value="crop">드론 주변 확대</option><option value="full">원본 전체</option></select></label>
+<p class="small">주변 확대 위치는 기존 데이터셋의 <b>드론 박스</b>를 사용합니다. 박스 내부의 정답 부위나 모델 대응점을 보여주는 것은 아닙니다.
+화면의 주황색 원은 사용자가 클릭한 연습 표시이며 자동 정답이 아닙니다.</p>
+<p id="pairtitle"></p><div class="grid" id="views"></div>
+<h3>먼저 각 영상에서 어느 정도 보이는지 선택하세요</h3><div class="grid" id="visibility"></div>
+<label>두 영상에서 <b>같은 실제 부위 하나</b>를 자신 있게 연결할 수 있나요?
+<select id="decision"><option value="">선택</option><option value="yes">네 — 부위를 구별하고 동일 부위라고 판단함</option><option value="unsure">드론은 보이지만 같은 부위인지 확신할 수 없음</option><option value="no">구별할 부위가 보이지 않음</option></select></label>
+<div id="pointtask" hidden><label>표시하려는 부위 <select id="part"><option value="">선택</option><option value="motor_axis">모터/프로펠러 회전축 중심</option><option value="arm_body_joint">팔과 동체가 만나는 식별 가능한 접합점</option><option value="body_corner">동체의 식별 가능한 모서리</option><option value="landing_joint">착륙 다리의 식별 가능한 접합점</option></select></label>
+<p>위 두 영상에서 같은 부위를 각각 한 번 클릭하세요. 왼쪽·오른쪽이라는 위치만으로 고르지 마세요. 모르겠다면 위 응답을 바꾸고 점을 남기지 않아도 됩니다.</p>
+<button id="clearpoints">두 점 지우기</button><p id="pointstatus"></p></div>
+<label>어떤 구조로 구별했나요? 또는 무엇이 어려웠나요? (부품 전문용어를 몰라도 됩니다)
+<textarea id="notes" rows="2" placeholder="예: 팔 연결은 보이지만 IR에서 축 중심은 구분되지 않음"></textarea></label>
+<label><input id="complete" type="checkbox">이 영상 쌍에 대한 답변을 마침</label>
+<button id="export">연습 결과 JSON 저장</button><label>내가 저장한 연습 이어하기 <input id="resume" type="file" accept=".json"></label>
+<p id="status" aria-live="polite"></p><p class="small">자동 저장·서버 전송 없음. 중간에도 저장할 수 있습니다. 완료하지 않은 응답은 미완료로 기록됩니다.</p>
+</section>
+<script>
+const manifest=__MANIFEST__;
+const $=id=>document.getElementById(id), mods=['visible','infrared'];
+const titles={visible:'가시광 영상 (RGB)',infrared:'적외선 영상 (IR)'};
+const fields=[['drone','드론 전체'],['body','동체'],['arms','팔(암)'],['propeller','프로펠러 날개'],['motor_axis','모터/회전축 중심']];
+let idx=0,images={},transforms={};
+let review={schema:'aero_part_familiarization_v1',purpose:'practice_only_not_registration_gt',
+ manifest_sha256:'__MANIFEST_HASH__',reviewer_slot:'__SLOT__',reviewer_identity:'',quiz:{},
+ pairs:manifest.pairs.map(p=>({pair_id:p.pair_id,observations:{visible:{},infrared:{}},decision:'',part:'',points:{},notes:'',complete:false}))};
+manifest.pairs.forEach((p,i)=>{let o=document.createElement('option');o.value=i;o.textContent=`${i+1} / ${manifest.pairs.length}`;$('pairselect').append(o)});
+mods.forEach(m=>{
+ let d=document.createElement('div');d.innerHTML=`<h3>${titles[m]}</h3><canvas id="${m}" width="520" height="390"></canvas>`;$('views').append(d);
+ let v=document.createElement('div');let h=document.createElement('h4');h.textContent=titles[m];v.append(h);
+ fields.forEach(([k,label])=>{let l=document.createElement('label');l.textContent=label+' ';let s=document.createElement('select');s.id=m+'_'+k;
+ [['','선택'],['clear','구별할 수 있음'],['uncertain','흐려서 확신할 수 없음'],['not_visible','보이지 않음']].forEach(([value,t])=>{let o=document.createElement('option');o.value=value;o.textContent=t;s.append(o)});l.append(s);v.append(l)});$('visibility').append(v);
+ $(m).onclick=e=>{if($('decision').value!=='yes'||!images[m]||!transforms[m])return;
+ let c=$(m),r=c.getBoundingClientRect(),t=transforms[m];let x=(e.clientX-r.left)*c.width/r.width,y=(e.clientY-r.top)*c.height/r.height;
+ if(x<t.ox||y<t.oy||x>=t.ox+t.w*t.s||y>=t.oy+t.h*t.s)return;
+ review.pairs[idx].points[m]=[Math.max(t.x,Math.min(t.x+t.w-1,t.x+(x-t.ox)/t.s-.5)),Math.max(t.y,Math.min(t.y+t.h-1,t.y+(y-t.oy)/t.s-.5))];draw();};
+});
+function store(){let p=review.pairs[idx];review.reviewer_identity=$('reviewer').value.trim();review.quiz={overlay:$('quiz1').value,thermal:$('quiz2').value};
+ mods.forEach(m=>fields.forEach(([k])=>p.observations[m][k]=$(m+'_'+k).value));
+ p.decision=$('decision').value;p.part=p.decision==='yes'?$('part').value:'';if(p.decision!=='yes')p.points={};p.notes=$('notes').value;p.complete=$('complete').checked;}
+function draw(){mods.forEach(m=>{let c=$(m),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(!images[m])return;
+ let entry=manifest.pairs[idx].images[m],b=$('viewmode').value==='full'?[0,0,entry.shape[1],entry.shape[0]]:entry.practice_crop_xyxy;
+ let [x,y,x1,y1]=b,w=x1-x,h=y1-y,s=Math.min(c.width/w,c.height/h),ox=(c.width-w*s)/2,oy=(c.height-h*s)/2;
+ transforms[m]={x,y,w,h,s,ox,oy};ctx.imageSmoothingEnabled=false;ctx.drawImage(images[m],x,y,w,h,ox,oy,w*s,h*s);
+ let point=review.pairs[idx].points[m];if(point){ctx.strokeStyle='#ff7900';ctx.lineWidth=2;ctx.beginPath();ctx.arc(ox+(point[0]+.5-x)*s,oy+(point[1]+.5-y)*s,7,0,2*Math.PI);ctx.stroke();}});
+ $('pointstatus').textContent=mods.map(m=>titles[m]+': '+(review.pairs[idx].points[m]?'표시함':'아직 표시하지 않음')).join(' / ');}
+function load(){images={};transforms={};let pair=manifest.pairs[idx],p=review.pairs[idx];$('pairselect').value=idx;
+ $('pairtitle').textContent=`연습 ${idx+1} / ${manifest.pairs.length} — ${pair.pair_id}`;
+ mods.forEach(m=>fields.forEach(([k])=>$(m+'_'+k).value=p.observations[m][k]||''));
+ $('decision').value=p.decision;$('part').value=p.part;$('notes').value=p.notes;$('complete').checked=p.complete;$('pointtask').hidden=p.decision!=='yes';draw();
+ mods.forEach(m=>{let im=new Image(),at=idx;im.onload=()=>{if(idx!==at)return;images[m]=im;draw()};im.onerror=()=>{$('status').textContent='이미지를 읽을 수 없습니다. images 폴더를 HTML 옆에 유지하세요.'};im.src=pair.images[m].path;});}
+function navigate(n){store();idx=Math.max(0,Math.min(manifest.pairs.length-1,n));load();}
+$('previous').onclick=()=>navigate(idx-1);$('next').onclick=()=>navigate(idx+1);$('pairselect').onchange=()=>navigate(Number($('pairselect').value));$('viewmode').onchange=draw;
+$('decision').onchange=()=>{store();$('pointtask').hidden=$('decision').value!=='yes';draw()};$('clearpoints').onclick=()=>{review.pairs[idx].points={};draw()};
+$('part').onchange=()=>{review.pairs[idx].points={};draw()};
+$('quizcheck').onclick=()=>{$('quizfeedback').textContent=$('quiz1').value==='overlay'&&$('quiz2').value==='no'?'맞습니다. 화면 표식과 열점만으로 부위를 결정하지 않습니다.':'정답 설명: 흰 선은 화면 표식이며, 밝은 열점만으로 모터 중심을 확정할 수 없습니다.'};
+function errors(){let e=[];if(!review.reviewer_identity)e.push('검토자 이름/별칭 필요');
+ review.pairs.forEach((p,i)=>{if(!p.complete)return;let missing=mods.some(m=>fields.some(([k])=>!p.observations[m][k]));
+ if(missing||!p.decision)e.push(`${i+1}번: 선택하지 않은 항목 있음`);
+ if(p.decision==='yes'&&(!p.part||mods.some(m=>!p.points[m])))e.push(`${i+1}번: 부위 선택과 두 영상의 클릭 필요`);
+ if(p.decision!=='yes'&&!p.notes.trim())e.push(`${i+1}번: 어려운 이유를 간단히 적어주세요`);});return e;}
+$('export').onclick=()=>{store();let e=errors();if(e.length){$('status').textContent=e.join(' / ');return;}
+ let result={...review,all_frames_answered:review.pairs.every(p=>p.complete),qualification:'not_assessed_practice_only'};
+ let url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='practice_'+review.reviewer_slot+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ $('status').textContent=`저장했습니다. 완료 ${review.pairs.filter(p=>p.complete).length}/${review.pairs.length}. GT나 정합 통과 결과가 아닙니다.`;};
+$('resume').onchange=async e=>{try{let r=JSON.parse(await e.target.files[0].text());if(r.schema!==review.schema||r.manifest_sha256!==review.manifest_sha256||r.reviewer_slot!==review.reviewer_slot||!Array.isArray(r.pairs)||r.pairs.length!==manifest.pairs.length||r.pairs.some((p,i)=>p.pair_id!==manifest.pairs[i].pair_id||!p.observations?.visible||!p.observations?.infrared||!p.points))throw Error('다른 연습 파일입니다');
+ review=r;$('reviewer').value=r.reviewer_identity;$('quiz1').value=r.quiz.overlay||'';$('quiz2').value=r.quiz.thermal||'';load();}catch(e){$('status').textContent='불러오기 실패: '+e.message;}};
+load();
+</script></html>

@@ -1,0 +1,13 @@
+kind: image_only_local_consensus_tps_screen_v1
+geometry_config: configs/experiment/registration_external_geometry_cpu.yaml
+methods: [xoftr, loftr]
+neighbors: 32
+trim_fraction: 0.75
+trim_iterations: 4
+agreement_min_thermal_pixels: 2.0
+agreement_thermal_long_side_fraction: 0.005
+control_grid: 12
+minimum_controls: 6
+tps_smoothing: 0.0001
+thresholds_thermal_file_pixels: [1.0, 3.0, 5.0, 10.0]
+qualification: exploratory_image_only_warp_not_antiuav_or_generator_approval

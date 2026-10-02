@@ -5,8 +5,9 @@
 found must point at an entry here. A claim without a reference beside it is a claim this
 repository does not make.
 
-Nothing in this repository derives from non-public material. If a finding cannot be traced to
-a public source, it is not cited, not reproduced, and not used as a baseline.
+Prior-work findings used in a public release must be traceable to public sources.
+A finding from a private requirements document is not a citable baseline merely
+because that document exists in a local worktree; exclude it pending provenance review.
 
 > **Verification status.** Entries marked *(verify)* were collected from abstracts and
 > summaries and must be checked against the PDF before any number is quoted in a paper or a
@@ -106,11 +107,13 @@ reports a three-arm controlled curve under stated conditions.
 | `nemar2020` | Unsupervised Multi-Modal Image Registration via Geometry Preserving Image-to-Image Translation. CVPR. [paper](https://openaccess.thecvf.com/content_CVPR_2020/html/Arar_Unsupervised_Multi-Modal_Image_Registration_via_Geometry_Preserving_Image-to-Image_Translation_CVPR_2020_paper.html) · [official code](https://github.com/moabarar/nemar) | motivates geometry preservation and separating modality appearance from spatial alignment |
 | `xoftr2024` | XoFTR: Cross-modal Feature Matching Transformer. CVPR Workshops. [paper](https://openaccess.thecvf.com/content/CVPR2024W/IMW/html/Tuzcuoglu_XoFTR_Cross-modal_Feature_Matching_Transformer_CVPRW_2024_paper.html) · [official code](https://github.com/OnderT/XoFTR) | visible/TIR-specific precedent for modality-aware matching and sub-pixel refinement |
 | `roma2024` | RoMa: Robust Dense Feature Matching. CVPR. [paper](https://openaccess.thecvf.com/content/CVPR2024/html/Edstedt_RoMa_Robust_Dense_Feature_Matching_CVPR_2024_paper.html) · [official code](https://github.com/Parskatt/RoMa) | robust coarse-to-fine dense correspondence and explicit match confidence precedent |
+| `minima2025` | MINIMA: Modality Invariant Image Matching. CVPR 2025. [paper](https://openaccess.thecvf.com/content/CVPR2025/html/Ren_MINIMA_Modality_Invariant_Image_Matching_CVPR_2025_paper.html) · [official code](https://github.com/LSXI7/MINIMA) | synthetic cross-modal training motivates the fixed-protocol XoFTR checkpoint comparison; local measurements and limitations in `registration_minima.md` |
 | `c2rf2025` | C2RF: Bridging Multi-modal Image Registration and Fusion via Commonality Mining and Contrastive Learning. IJCV. [official code](https://github.com/QinglongYan-hub/C2RF) | cross-modal commonality and contrastive structural evidence for registration/fusion |
 | `flir-adas-v2` | Teledyne FLIR ADAS Thermal Dataset v2. [official access page](https://oem.flir.com/en-gb/solutions/automotive/adas-dataset-form/) | IR protocol-transfer domain; visible/thermal pairing requires an audited manifest |
-| `llvip` | LLVIP aligned visible-infrared pairs. [arXiv:2108.10831](https://arxiv.org/abs/2108.10831) | optional domain |
+| `llvip` | LLVIP visible-infrared pairs, aligned by the authors using manually selected point pairs, projective warping and cropping. [arXiv:2108.10831, §3](https://arxiv.org/abs/2108.10831) | optional control domain, not independent Anti-UAV correspondence evidence; residual accuracy and licensing need auditing |
+| `uav-tirvis` | UAV-TIRVis: A Benchmark Dataset for Thermal–Visible Image Registration from Aerial Platforms. [paper](https://doi.org/10.3390/jimaging11120432) · [official data](https://gitlab.upb.ro/etti/dcae-public/arh/research/uav-tirvis) | external landmark diagnostic only; ground-scene domain, reference uncertainty and redistribution limitations recorded in `registration_external_landmarks.md` |
 | `dronevehicle` | DroneVehicle aerial RGB-IR detection. [arXiv:2003.02437](https://arxiv.org/abs/2003.02437) | optional domain |
-| `antiuav300` | Anti-UAV300 paired RGB/IR tracking data. [official project](https://github.com/ZhaoJ9014/Anti-UAV) | paired small-target generator-development source |
+| `antiuav300` | Anti-UAV300 RGB/IR tracking video pairs, not spatially registered pairs. [official project](https://github.com/ZhaoJ9014/Anti-UAV) · [benchmark paper, Fig. 1 and §III](https://arxiv.org/abs/2101.08466) | candidate small-target source; registration and independent correspondence remain unqualified, not approved paired-generator supervision |
 | `antiuav410` | Anti-UAV410 IR-only tracking benchmark. [project](https://github.com/HwangBo94/Anti-UAV410) | sequence-disjoint external thermal evaluation |
 | `cst-antiuav` | CST Anti-UAV, ICCV Workshops 2025 | tiny-target regime |
 

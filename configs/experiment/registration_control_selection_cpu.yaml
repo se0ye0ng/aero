@@ -1,0 +1,11 @@
+kind: control_selection_matched_cap_diagnostic_v1
+external_baseline: experiments/registration_external_local_warp_cpu_01/report.json
+external_baseline_sha256: 0c1d8e35cebdc67f507cf94edc3f2dd7a77782bd2cb149dda36f6394f15d86d8
+antiuav_baseline: experiments/registration_antiuav_local_warp_cpu_01/report.json
+antiuav_baseline_sha256: 5962d0ab64678ef47111a93fc02f9591a98be88cbb0c750d1e23f56c71957624
+external_config: configs/experiment/registration_external_local_warp_cpu.yaml
+antiuav_config: configs/experiment/registration_antiuav_local_warp_cpu.yaml
+policies: [grid, fps]
+# Same maximum as the existing 12x12 grid; actual retained counts can differ.
+maximum_controls: 144
+qualification: control_selection_diagnostic_not_registration_or_generator_approval

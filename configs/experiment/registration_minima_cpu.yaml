@@ -1,0 +1,23 @@
+kind: minima_xoftr_checkpoint_swap_v1
+baseline: experiments/registration_control_selection_cpu_01/report.json
+baseline_sha256: 645b9b217968af95e1a8bf0cfed22720b5d1ccc3bcf41111b3699403ba34333b
+source_report: experiments/xoftr_overlay_train16_01/report.json
+geometry_baseline: experiments/registration_match_geometry_01/report.json
+geometry_baseline_sha256: 465f3da0dc204066a329037d3d647778d1f89344c5bf935b654784b0caba6d19
+dataset_root: /lustre/winston1214/dataset/Anti-UAV300
+weights: experiments/external/minima_796e772/minima_xoftr.ckpt
+weights_sha256: 551eaa814713b3c60ca380eda022be9b7609e51737302e12370f8943a1e864d7
+weights_bytes: 44484144
+weights_url: https://github.com/LSXI7/storage/releases/download/MINIMA/minima_xoftr.ckpt
+weights_release_asset_id: 230220857
+upstream_commit: 796e7721174f9f829b79b3702bf8c2ae9a3d447a
+upstream_config: experiments/external/minima_796e772/default.py
+upstream_config_sha256: 4360ea2108cd92a3eb4bb7afab608cd777370d97146b46d795ca8452886bb1eb
+vendor: experiments/external/XoFTR
+local_config: configs/experiment/registration_external_local_warp_cpu.yaml
+external_config: configs/experiment/registration_external_landmarks_cpu.yaml
+control_policies: [grid, fps]
+global_models: [similarity, affine, homography]
+maximum_controls: 144
+box_iou_threshold: 0.6
+qualification: pretrained_checkpoint_diagnostic_not_registration_or_generator_approval

@@ -1,0 +1,51 @@
+{
+  "status": "offline_cpu_constructor_passed_inference_runner_pending",
+  "cpu_constructor_report": "experiments/minima_roma_runtime_cpu_01.json",
+  "candidate": "MINIMA RoMa outdoor",
+  "distinct_from_completed_candidate": "MINIMA XoFTR checkpoint swap",
+  "upstream": {
+    "repository": "https://github.com/LSXI7/MINIMA",
+    "commit": "796e7721174f9f829b79b3702bf8c2ae9a3d447a",
+    "loader": "load_model.py",
+    "wrapper": "src/utils/data_io_roma.py"
+  },
+  "model_source": {
+    "repository": "https://github.com/LSXI7/RoMa_minima",
+    "commit": "0d3fd22dfaf5b7e463a93c3d7f0cbc26df953663",
+    "commit_source": "MINIMA pinned third_party/RoMa_minima gitlink"
+  },
+  "weights": [
+    {
+      "role": "multimodal_matcher",
+      "url": "https://github.com/LSXI7/storage/releases/download/MINIMA/minima_roma.pth",
+      "local_path": "experiments/external/minima_roma_0d3fd22/minima_roma.pth",
+      "local_sha256": "17f3923bd780e8f1450792706e0643f70c8864ad11bf5fd4f2b54714bac23538",
+      "bytes": 445638463,
+      "downloaded": true
+    },
+    {
+      "role": "dinov2_vitl14_backbone",
+      "url": "https://dl.fbaipublicfiles.com/dinov2/dinov2_vitl14/dinov2_vitl14_pretrain.pth",
+      "local_path": "experiments/external/minima_roma_0d3fd22/dinov2_vitl14_pretrain.pth",
+      "local_sha256": "d5383ea8f4877b2472eb973e0fd72d557c7da5d3611bd527ceeb1d7162cbf428",
+      "bytes": 1217586395,
+      "downloaded": true
+    }
+  ],
+  "upstream_wrapper_issues_to_avoid": [
+    "np.float removed in installed NumPy",
+    "unconditional torch.cuda.synchronize prevents CPU preflight",
+    "torch.load must use weights_only=True for downloaded checkpoints",
+    "backbone is automatically downloaded unless dinov2_weights is explicit",
+    "coordinate conventions must be checked in the pinned model, not copied from XoFTR"
+  ],
+  "required_before_gpu_command": [
+    "Review pinned model source and dependency licenses",
+    "Download and hash both required weights without overwriting existing assets",
+    "Isolate dependencies and verify CPU construction without implicit downloads",
+    "Test normalized grid to pixel-centre conversion and image color handling",
+    "Freeze same-panel inference and known-transform/unrelated-image controls"
+  ],
+  "registration_qualified": false,
+  "generator_training_approved": false
+}

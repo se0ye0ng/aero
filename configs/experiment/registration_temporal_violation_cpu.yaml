@@ -1,0 +1,15 @@
+kind: registration_temporal_violation_cpu_v1
+seed: 0
+device: cpu
+initial_arm: uniform
+updates_per_arm: 200
+frames_per_sequence: 10
+batch_size: 8
+learning_rate: 0.00001
+weight_decay: 0.00001
+gradient_clip: 5.0
+auxiliary_weights:
+  geometry_only: 0.0
+  geometry_plus_violation: 1.0
+fit_panel: distinct_positions_per_train_sequence
+probe_panel: train_midpoints_and_quarters

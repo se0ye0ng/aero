@@ -1,0 +1,20 @@
+kind: external_landmark_diagnostic_v1
+dataset: UAV-TIRVis
+repository: https://gitlab.upb.ro/etti/dcae-public/arh/research/uav-tirvis
+commit: b6b914123bfe3074af8683476a1d1929f7a6cdc5
+api: https://gitlab.upb.ro/api/v4/projects/13575
+scenes: [Mountain, MountainResort, ResidentialArea, Seaside]
+# Fixed before viewing any matcher result: lowest numeric sample ID per scene.
+samples_per_scene: 1
+cache: experiments/external/uav_tirvis_b6b91412_screen4
+methods: [xoftr, loftr]
+seeds: [0, 1, 2]
+long_side: 640
+ransac_threshold_native_rgb_pixels: 5.0
+ransac_confidence: 0.999
+ransac_max_iterations: 10000
+report_thresholds_native_thermal_pixels: [1.0, 3.0, 5.0, 10.0]
+xoftr_weights: experiments/external/weights_xoftr_640.ckpt
+loftr_weights: experiments/external/loftr_outdoor.ckpt
+xoftr_vendor: experiments/external/XoFTR
+qualification: diagnostic_only_no_antiuav_or_generator_approval

@@ -1,0 +1,3 @@
+# Additional dependency for the pinned official RAFT-Stereo inference code.
+# Use the project's existing tested PyTorch installation; do not replace CUDA.
+opt_einsum==3.4.0

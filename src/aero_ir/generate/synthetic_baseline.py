@@ -3,7 +3,7 @@
 The comparison this repository has to support is three-way, not two-way:
 
     real                    the floor
-    real + simulated        what a physics/CG simulator already gives you, for free
+    real + simulated        an unlearned box-conditioned procedural baseline
     real + generated        what a generative model gives you on top
 
 Without the middle arm there is no way to say the generative step *earned* anything: a gain
@@ -11,15 +11,17 @@ over real-only could be a gain any crude simulation would also produce, and a lo
 loss any non-real imagery would produce. The generative model is only interesting to the
 extent it beats this baseline.
 
-This class is a minimal simulator in the sense a rendering pipeline is: it knows object
-identity from the labels and assigns radiometry accordingly, rather than learning a mapping.
+This class assigns approximate intensity from labels rather than learning a mapping.
+It is not a calibrated thermal renderer or a substitute for a physics/CG simulator.
 
     1. background apparent temperature from a smoothed luminance proxy
     2. class-conditional temperature offsets applied inside labelled regions
     3. the same :class:`~aero_ir.sensor.pipeline.IRSensorPipeline` every other arm goes through
 
-It is deliberately crude. That is the point: it is the "free" option any programme already
-has, and it is public, deterministic and reproducible.
+It is public, deterministic and reproducible. Blurring labelled rectangles does not
+remove their geometric imprint or establish realistic object silhouettes. A downstream
+comparison must report this limitation; superiority to this baseline does not establish
+superiority to physical simulation.
 """
 
 from __future__ import annotations
@@ -68,6 +70,13 @@ class SyntheticBaselineGenerator:
 
     def _luminance(self, rgb: np.ndarray) -> np.ndarray:
         arr = np.asarray(rgb, dtype=np.float64)
+        if (
+            arr.ndim not in (2, 3)
+            or min(arr.shape[:2], default=0) < 1
+            or (arr.ndim == 3 and arr.shape[2] != 3)
+            or not np.isfinite(arr).all()
+        ):
+            raise ValueError("expected a nonempty finite grayscale or three-channel RGB image")
         if arr.ndim == 2:
             lum = arr
         else:
@@ -81,15 +90,32 @@ class SyntheticBaselineGenerator:
     def render(self, rgb: np.ndarray, boxes, labels=None) -> np.ndarray:
         """Return a pseudo-IR image in digital numbers."""
         lum = self._luminance(rgb)
+        boxes = np.asarray(boxes, dtype=np.float64)
+        if boxes.shape == (0,):
+            boxes = boxes.reshape(0, 4)
+        if boxes.ndim != 2 or boxes.shape[1] != 4 or not np.isfinite(boxes).all():
+            raise ValueError("boxes must be finite Nx4 COCO xywh coordinates")
+        if (
+            (boxes[:, :2] < 0).any()
+            or (boxes[:, 2:] <= 0).any()
+            or (boxes[:, :2] + boxes[:, 2:] > [lum.shape[1], lum.shape[0]]).any()
+        ):
+            raise ValueError("boxes must have positive area and lie fully inside the image")
+        labels = list(labels) if labels is not None else ["_default"] * len(boxes)
+        if len(labels) != len(boxes):
+            raise ValueError("each box must have exactly one class label")
+        # The renderer uses rounded raster rectangles. A positive floating box can
+        # disappear after rounding; returning its original label would be misleading.
+        if len(boxes) and (np.rint(boxes[:, 2:]) <= 0).any():
+            raise ValueError("box collapses under the renderer's integer rasterization")
         # Luminance is a weak proxy for apparent temperature: it carries scene structure but
         # not thermal identity, which is exactly why the class offsets below are needed.
         temp = self.base_temp_k + self.scene_contrast_k * ndimage.gaussian_filter(
             lum, self.background_smooth_px
         )
 
-        labels = labels if labels is not None else ["_default"] * len(boxes)
         target = np.zeros_like(temp)
-        for box, label in zip(boxes, labels, strict=False):
+        for box, label in zip(boxes, labels, strict=True):
             x, y, bw, bh = (int(round(v)) for v in box)
             y0, y1 = max(0, y), min(temp.shape[0], y + bh)
             x0, x1 = max(0, x), min(temp.shape[1], x + bw)
@@ -97,8 +123,8 @@ class SyntheticBaselineGenerator:
                 continue
             target[y0:y1, x0:x1] = self._delta_for(label)
 
-        # Soften box edges: a rendered target does not have a rectangular thermal boundary,
-        # and a hard rectangle would hand the detector a trivially learnable artifact.
+        # Soften the hard discontinuity; this does not eliminate the box-shaped label
+        # imprint or prove that a detector cannot exploit it as a shortcut.
         target = ndimage.gaussian_filter(target, self.edge_softness_px)
         return (temp + target) * self.scene_response_dn_per_K
 

@@ -1,0 +1,11 @@
+kind: external_reference_geometry_capacity_v1
+cache: experiments/external/uav_tirvis_b6b91412_screen4
+manifest_sha256: 0b389d397dd5c74174bc6befa2340dfe4747fd44df14b285a3dd281b8579bfb3
+image_only_report: experiments/registration_external_landmarks_cpu_01/report.json
+image_only_report_sha256: 2d74696136ca4f99efdea4e2f816b3be0742c2e9b9505a56096d8261875a4d6f
+families: [affine, homography, thin_plate_spline]
+folds: 5
+seeds: [0, 1, 2]
+tps_smoothing: 0.0
+thresholds_thermal_file_pixels: [1.0, 3.0, 5.0, 10.0]
+qualification: oracle_diagnostic_only_no_antiuav_or_generator_approval
