@@ -13,8 +13,8 @@ is vendored into this repository. The single exception is the four qualitative f
 | M3FD | multi-scenario visible-infrared fusion and detection | public fusion-benchmark collections |
 | KAIST Multispectral Pedestrian | day/night RGB-thermal pairs | project page |
 | DroneVehicle | aerial RGB-IR vehicles, oriented boxes, large scale | project GitHub |
-| Anti-UAV300 | paired RGB/IR UAV tracking data for generator development | project GitHub |
-| Anti-UAV410 | IR-only UAV tracking benchmark for external thermal evaluation | project GitHub |
+| Anti-UAV300 | paired RGB/IR UAV tracking data for generator development | project GitHub; MIT, open download links |
+| Anti-UAV410 | IR-only UAV tracking benchmark for external thermal evaluation | project GitHub; MIT, open download links |
 | CST Anti-UAV | tiny UAV thermal tracking | conference workshop release |
 | MS² Multi-Spectral Stereo | calibrated RGB/NIR/thermal stereo with LiDAR depth; candidate additional source, **not yet qualified** | dataset website; CC BY-NC-SA 3.0 |
 

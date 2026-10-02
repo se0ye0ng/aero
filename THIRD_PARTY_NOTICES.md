@@ -4,18 +4,51 @@
 
 The qualitative figures under `assets/figures/` are diagnostic renderings produced by this
 repository's own scripts, and they display frames from the
-[Anti-UAV300](https://github.com/ZhaoJ9014/Anti-UAV) dataset (Jiang et al., *Anti-UAV: A
-Large-Scale Benchmark for Vision-Based UAV Tracking*, [arXiv:2101.08466](https://arxiv.org/abs/2101.08466)).
-Four low-resolution frames from training sequences `20190925_131530_1_2`,
-`20190925_200320_1_7`, `20190925_130434_1_4` and `20190925_101846_1_1` are visible, each
-annotated with the model output and the dataset's own bounding box.
+[Anti-UAV300](https://github.com/ZhaoJ9014/Anti-UAV) dataset. Four low-resolution frames from
+training sequences `20190925_131530_1_2`, `20190925_200320_1_7`, `20190925_130434_1_4` and
+`20190925_101846_1_1` are visible, each annotated with the model output and the dataset's own
+bounding box. This is the only place where dataset pixels appear inside the repository.
 
-This is the one place where dataset pixels appear inside the repository; they are included for
-illustration of a method and of its failure modes. The upstream project is published under the
-MIT license, but a code license is not asserted to be a blanket redistribution authorization for
-the recorded imagery. No dataset archive, split, annotation file or bulk imagery is vendored
-here, and `docs/datasets.md` remains the access route. If the Anti-UAV300 authors' terms require
-it, these four figures are the only assets that need removal.
+**Terms, as checked against the upstream project on 2026-10-02.** The Anti-UAV README states
+that "the project of Anti-UAV is released under the MIT License", and the project it describes
+is the task, the datasets, the evaluation metrics and the baseline methods together. The
+repository carries one `LICENSE`, reproduced below, and no separate dataset licence, data-use
+agreement or request form; Anti-UAV300 is distributed from open Google Drive and Baidu links.
+No non-commercial, research-only or no-redistribution clause is attached to it. Including four
+annotated frames is therefore within the grant, and the condition the grant does impose -- that
+the copyright notice and permission notice travel with the material -- is met here.
+
+Copyright (c) 2020 Zhao Jian
+
+Licensed under the MIT License:
+
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
+Cite Jiang et al., *Anti-UAV: A Large-Scale Benchmark for Vision-Based UAV Tracking*,
+[arXiv:2101.08466](https://arxiv.org/abs/2101.08466). The upstream README lists further papers
+it asks to be considered for citation.
+
+The scope of the grant is the limit of what is claimed here: no dataset archive, split,
+annotation file or bulk imagery is vendored, and `docs/datasets.md` remains the access route.
+MIT is written for software, so applying it to recorded imagery rests on the authors' own
+statement rather than on licence text drafted for pixels. Anyone redistributing these figures
+further should read that statement for themselves.
 
 ## MS² additional-source validation
 
