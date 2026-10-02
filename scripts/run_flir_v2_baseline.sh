@@ -6,7 +6,7 @@ PYTHON_BIN="${AERO_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
 RUN_ID="flir_real_only_full_seed0_v2"
 SPEC_PATH="$PROJECT_ROOT/experiments/yolox_specs/$RUN_ID.json"
 RUN_DIR="$PROJECT_ROOT/experiments/yolox_runs/$RUN_ID"
-FLIR_ROOT="/lustre/winston1214/dataset/teledyne-flir-adas-thermal-dataset-v2/extracted/FLIR_ADAS_v2"
+FLIR_ROOT="${AERO_FLIR_ROOT:-${AERO_DATA_ROOT:-data}/FLIR_ADAS_v2}"
 
 cd "$PROJECT_ROOT"
 

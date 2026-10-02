@@ -561,7 +561,7 @@ No validation/test pixels or annotations are used during this pilot.
 First, CPU-only preflight (does not create training outputs or require CUDA):
 
 ```bash
-cd /lustre/winston1214/project/aero
+cd <repository root>
 bash scripts/run_registration_residual_pilot.sh both preflight
 ```
 

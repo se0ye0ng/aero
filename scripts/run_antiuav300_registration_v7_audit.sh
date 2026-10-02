@@ -13,7 +13,7 @@ case "$MODE" in
   *) echo "Usage: bash $0 [screen|exhaustive|preflight]" >&2; exit 2 ;;
 esac
 PYTHON_BIN="${AERO_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
-DATA_ROOT="${AERO_ANTIUAV300_ROOT:-/lustre/winston1214/dataset/Anti-UAV300}"
+DATA_ROOT="${AERO_ANTIUAV300_ROOT:-${AERO_DATA_ROOT:-data}/Anti-UAV300}"
 RUN_ROOT="${AERO_V7_OUTPUT:-$PROJECT_ROOT/experiments/antiuav300_registration_v7_pilot_e10_seed0}"
 OUT_DIR="${AERO_V7_AUDIT_OUTPUT:-$PROJECT_ROOT/experiments/registration_v7_${MODE}_audit_01}"
 for path in "$PYTHON_BIN" "$DATA_ROOT" "$RUN_ROOT" "$OUT_DIR"; do

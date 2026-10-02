@@ -3,7 +3,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_BIN="${AERO_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
-DATA_ROOT="${AERO_ANTIUAV300_ROOT:-/lustre/winston1214/dataset/Anti-UAV300}"
+DATA_ROOT="${AERO_ANTIUAV300_ROOT:-${AERO_DATA_ROOT:-data}/Anti-UAV300}"
 CHECKPOINT="${AERO_SUPERFUSION_CHECKPOINT:-$PROJECT_ROOT/experiments/checkpoints/superfusion/RoadScene.pth}"
 OUTPUT_ROOT="${AERO_REGISTRATION_OUTPUT:-$PROJECT_ROOT/experiments}"
 TRAIN_CACHE="${AERO_REGISTRATION_CACHE:-$OUTPUT_ROOT/antiuav300_registration_train_cache_s16}"

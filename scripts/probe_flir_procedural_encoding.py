@@ -13,10 +13,9 @@ from aero_ir.data.preprocess import apply_uint16_linear_preprocess, verify_prepr
 from aero_ir.generate.dn_encoding import encode_procedural, procedural_encoding
 from aero_ir.generate.synthetic_baseline import SyntheticBaselineGenerator
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import flir_root
 
-ROOT = Path(
-    "/lustre/winston1214/dataset/teledyne-flir-adas-thermal-dataset-v2/extracted/FLIR_ADAS_v2"
-)
+ROOT = flir_root()
 CONFIG = Path("configs/generator/synthetic_baseline.yaml")
 PREPROCESS = Path("experiments/flir_preprocess.json")
 CLASSES = ("person", "bike", "car", "motor", "bus", "truck")

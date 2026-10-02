@@ -10,6 +10,7 @@ from pathlib import Path
 from PIL import Image
 
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 
 # Six fixed midpoint frames across the previous sixteen sequences, not quality selected.
 PANEL_INDICES = (1, 10, 19, 28, 37, 46)
@@ -127,7 +128,7 @@ def main():
     p.add_argument(
         "--panel", type=Path, default=Path("experiments/registration_physical_review_train48_02")
     )
-    p.add_argument("--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300"))
+    p.add_argument("--root", type=Path, default=antiuav300_root())
     p.add_argument("--output-dir", type=Path, required=True)
     a = p.parse_args()
     result = prepare(a.panel, a.root, a.output_dir)

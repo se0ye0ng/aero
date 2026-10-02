@@ -11,6 +11,7 @@ import torch
 
 from aero_ir.registration.prewarp import field_predictor
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.audit_antiuav300_dense_registration import _read_at
 from scripts.probe_antiuav_local_warp import corner_iou
 from scripts.probe_minima_roma_gpu import protocol
@@ -39,7 +40,7 @@ def render(visible, infrared_size, ir_to_rgb, rgb_top):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--out-dir", type=Path, required=True)
-    p.add_argument("--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300"))
+    p.add_argument("--root", type=Path, default=antiuav300_root())
     args = p.parse_args()
     if args.out_dir.exists():
         raise FileExistsError(args.out_dir)

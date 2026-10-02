@@ -16,6 +16,7 @@ import torch
 from aero_ir.registration.geometry import warp
 from aero_ir.registration.qualification_v4 import direction_statistics
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.audit_antiuav300_dense_registration import _candidate_pairs, _read_at
 from scripts.audit_registration_residual_pilot import audit_sources, pilot_hashes
 from scripts.compare_registration_residual_pilot import compare
@@ -79,7 +80,7 @@ def render_native(path, images, boxes, title):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300"))
+    p.add_argument("--root", type=Path, default=antiuav300_root())
     p.add_argument("--cache-root", type=Path,
                    default=Path("experiments/antiuav300_registration_v2_full_train_cache"))
     p.add_argument("--run-root", type=Path,

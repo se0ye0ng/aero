@@ -32,6 +32,7 @@ from aero_ir.registration.protocol_v7 import (
 from aero_ir.registration.qualification_v4 import direction_statistics, split_report
 from aero_ir.registration.superfusion import DenseMatcher, load_superfusion_matcher
 from aero_ir.utils.manifest import canonical_hash, file_sha256
+from aero_ir.utils.paths import antiuav300_root
 
 INITIAL_SHA256 = "b719c61b6ba991a1855c66ca32d7cbe1d86646498a289c5fc2d434ba3cf6f02e"
 ARRAY_KEYS = ("visible", "infrared", "source_boxes", "target_boxes")
@@ -168,7 +169,7 @@ def write_json(path, obj):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument(
         "--cache-root",

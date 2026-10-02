@@ -1144,6 +1144,10 @@ The existence of a local file or a public download link is not, by itself, relea
 
 - **Prior results** are cited in [`docs/references.md`](docs/references.md). A statement about
   what previous work found is not made in this repository without a reference beside it.
+- **Recorded runs pin the sources that produced them**, and a recorded digest is never
+  rewritten. [`docs/source_provenance.md`](docs/source_provenance.md) explains how a pinned
+  source is resolved and names the ten runs whose source revision was never committed and so
+  cannot be verified at all.
 - **Data** is public and gated only by the providers' own request forms. See
   [`docs/datasets.md`](docs/datasets.md).
 - **Baselines** — YOLOX, DiffV2IR and PID have public code/checkpoint routes. Exact revisions and

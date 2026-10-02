@@ -13,7 +13,7 @@ case "$MODE" in
   *) echo "Usage: bash $0 [preflight|screen|exhaustive]" >&2; exit 2 ;;
 esac
 PYTHON_BIN="${AERO_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
-DATA_ROOT="${AERO_ANTIUAV300_ROOT:-/lustre/winston1214/dataset/Anti-UAV300}"
+DATA_ROOT="${AERO_ANTIUAV300_ROOT:-${AERO_DATA_ROOT:-data}/Anti-UAV300}"
 RUN_ROOT="${AERO_REPLAY_OUTPUT:-$PROJECT_ROOT/experiments/registration_replay_e300_seed0}"
 BASE_ROOT="${AERO_RESIDUAL_OUTPUT:-$PROJECT_ROOT/experiments/registration_residual_pilot_e10_seed0}"
 CACHE_ROOT="${AERO_REGISTRATION_CACHE:-$PROJECT_ROOT/experiments/antiuav300_registration_v2_full_train_cache}"

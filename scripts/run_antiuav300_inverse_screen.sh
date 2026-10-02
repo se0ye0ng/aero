@@ -6,7 +6,7 @@ cd "$PROJECT_ROOT"
 EXP="$PROJECT_ROOT/experiments"
 PYTHON_BIN="${AERO_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
 OUTPUT="${AERO_INVERSE_SCREEN_OUTPUT:-$EXP/antiuav300_v6_inverse_screen_01}"
-DATA_ROOT="${AERO_ANTIUAV300_ROOT:-/lustre/winston1214/dataset/Anti-UAV300}"
+DATA_ROOT="${AERO_ANTIUAV300_ROOT:-${AERO_DATA_ROOT:-data}/Anti-UAV300}"
 V4="$EXP/antiuav300_registration_train_coordinates_v4_e300_seed0/antiuav300_dense_matcher_bidirectional_v4_e300.pth"
 V6="$EXP/antiuav300_registration_v6_pilot_e10_seed0/antiuav300_registration_v6_e10.pth"
 # Preserve scheduler GPU allocation; default CPU threads avoid oversubscription.

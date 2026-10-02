@@ -283,7 +283,7 @@ runs; their scores must not be presented as bit-identical replay results.
 To verify the completed artifacts without GPU inference:
 
 ```bash
-cd /lustre/winston1214/project/aero
+cd <repository root>
 env CUDA_VISIBLE_DEVICES= OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
   .venv/bin/python -m scripts.probe_external_resolution verify \
   --out-dir experiments/registration_external_resolution_gpu_01

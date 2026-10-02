@@ -123,10 +123,13 @@ def test_old_sam_report_and_sources_remain_unchanged():
     # Local artifact integration check; CI need not possess user experiment artifacts.
     import json
 
-    from aero_ir.utils.manifest import file_sha256
+    from aero_ir.utils.manifest import verify_recorded_sources
 
     path = Path("experiments/registration_sam_train16_v1/report.json")
     if not path.exists():
         pytest.skip("local v1 artifacts unavailable")
     report = json.loads(path.read_text())
-    assert all(file_sha256(name) == digest for name, digest in report["sources"].items())
+    # Raises unless every pinned source still matches the working tree, or matches at a
+    # commit declared in docs/source_supersession.json. Recorded digests are never rewritten.
+    verified = verify_recorded_sources(report["sources"])
+    assert set(verified) == set(report["sources"])

@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 PYTHON_BIN="${AERO_PYTHON:-$PWD/.venv/bin/python}"
 OUT="${AERO_ROMA_OUTPUT:-$PWD/experiments/registration_minima_roma_gpu_01}"
-DATA_ROOT="${AERO_ANTIUAV300_ROOT:-/lustre/winston1214/dataset/Anti-UAV300}"
+DATA_ROOT="${AERO_ANTIUAV300_ROOT:-${AERO_DATA_ROOT:-data}/Anti-UAV300}"
 for value in "$PYTHON_BIN" "$OUT" "$DATA_ROOT"; do
   if [[ "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
     echo 'Paths must be on a single line.' >&2

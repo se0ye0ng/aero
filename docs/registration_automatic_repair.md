@@ -137,7 +137,7 @@ pending matched residual-learning GPU pilots or independent physical evidence.
 Implementation: `scripts/probe_registration_sam.py`; launch:
 
 ```bash
-AERO_ANTIUAV300_ROOT=/lustre/winston1214/dataset/Anti-UAV300 \
+AERO_ANTIUAV300_ROOT="$AERO_DATA_ROOT/Anti-UAV300" \
   bash scripts/run_registration_sam_probe.sh
 ```
 
