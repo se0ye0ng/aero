@@ -139,7 +139,7 @@ was launched by that preflight; the annotation-selected panel is recorded separa
 One GPU, sequential arms:
 
 ```bash
-cd /lustre/winston1214/project/aero
+cd <repository root>
 source .venv/bin/activate
 bash scripts/run_antiuav300_registration_v7.sh both
 ```

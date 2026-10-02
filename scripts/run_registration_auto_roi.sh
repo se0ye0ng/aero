@@ -4,7 +4,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 PYTHON_BIN="${AERO_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
-DATA_ROOT="${AERO_ANTIUAV300_ROOT:-/lustre/winston1214/dataset/Anti-UAV300}"
+DATA_ROOT="${AERO_ANTIUAV300_ROOT:-${AERO_DATA_ROOT:-data}/Anti-UAV300}"
 DEVICE="${AERO_DEVICE:-cuda}"
 OUTPUT_ROOT="${AERO_AUTO_ROI_OUTPUT:-$PROJECT_ROOT/experiments/registration_auto_roi_gpu_v1}"
 EXTERNAL_ROOT="${AERO_EXTERNAL_ROOT:-$PROJECT_ROOT/experiments/external}"

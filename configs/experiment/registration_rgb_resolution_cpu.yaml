@@ -2,7 +2,7 @@ kind: frozen_xoftr_rgb_resolution_diagnostic_v1
 baseline: experiments/registration_control_selection_cpu_01/report.json
 baseline_sha256: 645b9b217968af95e1a8bf0cfed22720b5d1ccc3bcf41111b3699403ba34333b
 source_report: experiments/xoftr_overlay_train16_01/report.json
-dataset_root: /lustre/winston1214/dataset/Anti-UAV300
+dataset_root: data/Anti-UAV300
 external_root: experiments/external
 rgb_width: 1280
 control_policies: [grid, fps]

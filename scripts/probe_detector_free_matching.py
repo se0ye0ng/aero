@@ -32,6 +32,7 @@ from aero_ir.registration.detector_free import (
     pair_metrics,
 )
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.audit_antiuav300_dense_registration import _candidate_pairs, _read_at
 
 VENDOR_COMMIT = "e0fbea431b30be9742effbf5577c90aa8eb938f9"
@@ -178,7 +179,7 @@ def summary(rows):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument("--external-root", type=Path, default=Path("experiments/external"))
     parser.add_argument("--output-dir", type=Path, required=True)

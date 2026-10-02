@@ -18,6 +18,7 @@ from torch.nn import functional as F
 
 from aero_ir.registration.detector_free import inside_box
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.analyze_detector_free_screen import hull_fraction
 from scripts.probe_detector_free_matching import read_pair, visual_review
 
@@ -155,7 +156,7 @@ def load_model(external):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument("--external-root", type=Path, default=Path("experiments/external"))
     parser.add_argument(

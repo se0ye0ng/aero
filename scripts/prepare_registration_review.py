@@ -16,6 +16,7 @@ import numpy as np
 from aero_ir.data.antiuav import load_split_manifest
 from aero_ir.registration.physical_review import review_template
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.audit_antiuav300_dense_registration import _candidate_pairs, _read_at
 
 HTML = r"""<!doctype html><meta charset="utf-8"><title>Independent physical review</title>
@@ -112,7 +113,7 @@ def dump(path, value):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()

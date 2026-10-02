@@ -65,7 +65,7 @@ Custom subsets can be evaluated with repeated `--checkpoint NAME=PATH` arguments
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m scripts.compare_antiuav300_registration_pilots \
-  --root /lustre/winston1214/dataset/Anti-UAV300 \
+  --root "$AERO_ANTIUAV300_ROOT" \
   --checkpoint "v4=$CHECKPOINT_V4" \
   --checkpoint "v6=$CHECKPOINT_V6" \
   --output-dir "$PWD/experiments/registration_v4_v6_comparison_01" \

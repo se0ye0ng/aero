@@ -15,6 +15,7 @@ import torch
 
 from aero_ir.registration.detector_free import infer, inside_box, load_matcher, pair_metrics
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.analyze_detector_free_screen import hull_fraction, transfer_iou
 from scripts.probe_detector_free_matching import (
     VENDOR_COMMIT,
@@ -89,7 +90,7 @@ def aggregate(rows):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300"))
+    p.add_argument("--root", type=Path, default=antiuav300_root())
     p.add_argument(
         "--baseline-report",
         type=Path,

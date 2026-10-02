@@ -14,6 +14,7 @@ import torch
 
 from aero_ir.registration.detector_free import infer, load_matcher
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.probe_detector_free_matching import VENDOR_COMMIT, WEIGHT_HASHES, read_pair
 from scripts.probe_xoftr_overlay import aggregate, metrics
 
@@ -152,7 +153,7 @@ def main():
         default=Path("experiments/detector_free_train16_01/report.json"),
     )
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument("--external-root", type=Path, default=Path("experiments/external"))
     parser.add_argument("--output-dir", type=Path, required=True)

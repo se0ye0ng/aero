@@ -26,6 +26,7 @@ from aero_ir.registration.qualification_v4 import (
     gate_report,
 )
 from aero_ir.utils.manifest import canonical_hash, file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.audit_antiuav300_dense_registration import _batches, _iter_pairs
 from scripts.audit_antiuav300_registration_v4 import expected_pairs
 from scripts.train_antiuav300_registration_v7 import load_trained
@@ -198,7 +199,7 @@ def write_json(path, value):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument(
         "--run-root",

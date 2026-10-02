@@ -103,8 +103,8 @@ prevents the observed Chamfer regressions but does not establish correct corresp
 ### Reproduction command
 
 ```bash
-cd /lustre/winston1214/project/aero
-AERO_ANTIUAV300_ROOT=/lustre/winston1214/dataset/Anti-UAV300 \
+cd <repository root>
+AERO_ANTIUAV300_ROOT="$AERO_DATA_ROOT/Anti-UAV300" \
   bash scripts/run_registration_sam_v2.sh
 ```
 

@@ -21,6 +21,7 @@ import torch
 from aero_ir.registration.roi_geometry import prepare_centred, restore_cached
 from aero_ir.registration.silhouette_search import align_masks
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.probe_registration_auto_roi import auto_hud, load_native
 from scripts.probe_registration_sam import extract_masks
 
@@ -126,7 +127,7 @@ def main():
         default=Path("experiments/registration_sam_train16_v1/report.json"),
     )
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument(
         "--baseline-report",

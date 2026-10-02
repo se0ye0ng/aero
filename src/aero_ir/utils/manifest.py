@@ -160,6 +160,51 @@ def _git_blob_sha256(path: Path, repository_root: Path, git_sha: str) -> str | N
     return hashlib.sha256(completed.stdout).hexdigest()
 
 
+SOURCE_SUPERSESSION = Path("docs/source_supersession.json")
+
+
+def _supersession_commits(record: Path, name: str) -> list[str]:
+    """Commits recorded as still matching ``name`` after it was edited."""
+    try:
+        entries = json.loads(record.read_text())["entries"]
+    except (OSError, KeyError, json.JSONDecodeError):
+        return []
+    return [e["commit"] for e in entries if name in e.get("paths", ())]
+
+
+def verify_recorded_sources(
+    sources: dict[str, str],
+    *,
+    repository_root: Path | None = None,
+    supersession: Path | None = None,
+) -> dict[str, str]:
+    """Verify the sources a recorded run pinned.
+
+    A source normally still matches the working tree. When it was edited after the run,
+    it is accepted only if it matches at a commit declared in the supersession record,
+    and the returned value is that commit instead of ``"worktree"``. A recorded digest is
+    never rewritten, so a source that matches nothing raises.
+    """
+    root = (repository_root or Path.cwd()).resolve()
+    record = supersession if supersession is not None else root / SOURCE_SUPERSESSION
+    verified: dict[str, str] = {}
+    for name, digest in sources.items():
+        path = root / name
+        if path.is_file() and file_sha256(path) == digest:
+            verified[name] = "worktree"
+            continue
+        for commit in _supersession_commits(record, name):
+            if _git_blob_sha256(path, root, commit) == digest:
+                verified[name] = commit
+                break
+        else:
+            raise ValueError(
+                f"source {name!r} matches neither the working tree nor any commit "
+                f"declared in {record}; expected {digest}"
+            )
+    return verified
+
+
 def verify_artifacts(
     manifest: dict,
     base: Path,

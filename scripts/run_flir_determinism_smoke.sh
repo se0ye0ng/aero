@@ -17,7 +17,7 @@ sanitize_pasted_path() {
 }
 
 # A previously exported AERO_FLIR_ROOT may contain pasted newlines or indentation.
-FLIR_ROOT="$(sanitize_pasted_path "${AERO_FLIR_ROOT:-/lustre/winston1214/dataset/teledyne-flir-adas-thermal-dataset-v2/extracted/FLIR_ADAS_v2}")"
+FLIR_ROOT="$(sanitize_pasted_path "${AERO_FLIR_ROOT:-${AERO_DATA_ROOT:-data}/FLIR_ADAS_v2}")"
 PREPARED_ROOT="${AERO_FLIR_YOLOX_ROOT:-$PROJECT_ROOT/experiments/flir_yolox}"
 PREPROCESS_PATH="${AERO_FLIR_PREPROCESS:-$PROJECT_ROOT/experiments/flir_preprocess.json}"
 OUTPUT_ROOT="${AERO_YOLOX_OUTPUT:-$PROJECT_ROOT/experiments/yolox_runs}"

@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 
 
 def trajectory(annotation, shape):
@@ -99,7 +100,7 @@ def lag_screen(a, b, valid_a, valid_b, maximum=15):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300"))
+    p.add_argument("--root", type=Path, default=antiuav300_root())
     p.add_argument(
         "--baseline-report",
         type=Path,

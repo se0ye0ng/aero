@@ -17,6 +17,7 @@ from aero_ir.registration.geometry import CONVENTION
 from aero_ir.registration.qualification_v4 import THRESHOLDS, direction_pass, gate_report
 from aero_ir.registration.replay_sampling import ARMS
 from aero_ir.utils.manifest import canonical_hash, file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.audit_antiuav300_registration_v7 import (
     SPLITS,
     Coverage,
@@ -251,7 +252,7 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument(
         "--run-root", type=Path, default=Path("experiments/registration_replay_e300_seed0")

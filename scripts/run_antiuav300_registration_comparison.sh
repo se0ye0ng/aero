@@ -4,7 +4,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 PYTHON_BIN="${AERO_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
-DATA_ROOT="${AERO_ANTIUAV300_ROOT:-/lustre/winston1214/dataset/Anti-UAV300}"
+DATA_ROOT="${AERO_ANTIUAV300_ROOT:-${AERO_DATA_ROOT:-data}/Anti-UAV300}"
 OUTPUT="${AERO_REGISTRATION_COMPARE_OUTPUT:-$PROJECT_ROOT/experiments/antiuav300_registration_comparison_v4_v5_v6_01}"
 EXP="$PROJECT_ROOT/experiments"
 for path in "$DATA_ROOT" "$OUTPUT"; do

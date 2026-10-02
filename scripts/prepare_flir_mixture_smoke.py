@@ -10,10 +10,9 @@ from aero_ir.data.coco_mixture import assemble_mixture
 from aero_ir.data.preprocess import verify_preprocess_spec
 from aero_ir.detect.flir_yolox import build_flir_yolox_dataset
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import flir_root
 
-ROOT = Path(
-    "/lustre/winston1214/dataset/teledyne-flir-adas-thermal-dataset-v2/extracted/FLIR_ADAS_v2"
-)
+ROOT = flir_root()
 REAL = Path("experiments/flir_yolox/annotations/train.json")
 AUX = Path("experiments/flir_procedural_encoding_smoke_01")
 PREPROCESS = Path("experiments/flir_preprocess.json")

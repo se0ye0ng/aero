@@ -4,7 +4,7 @@ baseline_sha256: 645b9b217968af95e1a8bf0cfed22720b5d1ccc3bcf41111b3699403ba34333
 source_report: experiments/xoftr_overlay_train16_01/report.json
 geometry_baseline: experiments/registration_match_geometry_01/report.json
 geometry_baseline_sha256: 465f3da0dc204066a329037d3d647778d1f89344c5bf935b654784b0caba6d19
-dataset_root: /lustre/winston1214/dataset/Anti-UAV300
+dataset_root: data/Anti-UAV300
 weights: experiments/external/minima_796e772/minima_xoftr.ckpt
 weights_sha256: 551eaa814713b3c60ca380eda022be9b7609e51737302e12370f8943a1e864d7
 weights_bytes: 44484144

@@ -12,6 +12,7 @@ import numpy as np
 
 from aero_ir.registration.detector_free import inside_box, reciprocal_mask
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 
 
 def hull_fraction(points, box):
@@ -50,7 +51,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     args = parser.parse_args()
     destination = args.report.parent / "spatial_audit.json"

@@ -15,7 +15,7 @@ mean the registration is physically accurate or eligible for generator training.
 
 ```bash
 .venv/bin/python -B -m scripts.prepare_registration_review \
-  --root /lustre/winston1214/dataset/Anti-UAV300 \
+  --root "$AERO_ANTIUAV300_ROOT" \
   --output-dir experiments/registration_physical_review_train48_02
 ```
 

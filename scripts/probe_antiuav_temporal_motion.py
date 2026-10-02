@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 from aero_ir.utils.manifest import file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.audit_antiuav300_dense_registration import _read_at
 from scripts.probe_registration_rgb_resolution import prepare_input
 
@@ -35,7 +36,7 @@ def box_mask(shape, box):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--root", type=Path, default=Path("/lustre/winston1214/dataset/Anti-UAV300")
+        "--root", type=Path, default=antiuav300_root()
     )
     parser.add_argument("--out-dir", type=Path, required=True)
     args = parser.parse_args()

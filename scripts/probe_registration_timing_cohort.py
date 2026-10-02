@@ -13,6 +13,7 @@ from pathlib import Path
 from aero_ir.data.antiuav import load_split_manifest, probe_video
 from aero_ir.registration.qualification_v4 import direction_pass
 from aero_ir.utils.manifest import canonical_hash, file_sha256
+from aero_ir.utils.paths import antiuav300_root
 from scripts.probe_registration_timing import lag_screen, trajectory
 from scripts.verify_registration_v7 import check, verify_arm
 
@@ -158,7 +159,7 @@ def run(root, cache, run_root, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path,
-                        default=Path("/lustre/winston1214/dataset/Anti-UAV300"))
+                        default=antiuav300_root())
     parser.add_argument("--cache-root", type=Path,
                         default=Path("experiments/antiuav300_registration_v2_full_train_cache"))
     parser.add_argument("--run-root", type=Path,
