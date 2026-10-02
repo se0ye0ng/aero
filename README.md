@@ -2,14 +2,16 @@
 
 **A radiometric-consistency study of generative training data for infrared target detection.**
 
+**Status:** Design & protocol complete · Sensor chain and RFS implemented ·
+Controlled experiments in progress. Verified FLIR real-only baseline:
+35.56% mAP@0.5:0.95. Full results and open requirements: [docs/results.md](docs/results.md)
+
 > Published downstream effects vary with dataset, task and protocol. This repository tests a
 > narrower question: whether sensor-aware radiometric statistics add held-out predictive value
 > for infrared detector training data.
 >
 > Every claim about prior results is anchored to a citation in
-> [`docs/references.md`](docs/references.md). A public release must exclude local
-> requirements, reviewer responses and assets without reviewed redistribution rights;
-> see [Provenance](#provenance).
+> [`docs/references.md`](docs/references.md).
 
 **Central hypothesis.** Across held-out generators and infrared domains, a class-conditional,
 sensor-aware radiometric diagnostic predicts the downstream change in detection AP better than
@@ -1148,7 +1150,8 @@ The existence of a local file or a public download link is not, by itself, relea
   artifact hashes must be pinned in every run. E1 starts from the documented YOLOX 300-epoch
   scratch recipe but is an IR protocol transfer, not a reproduction of the DIMO experiment.
 - **Exclude proprietary material**: imagery, labels, sensor specifications,
-  requirement documents, internal results and organisation names from non-public sources.
+  requirement documents, reviewer responses, internal results, organisation names from
+  non-public sources, and assets without reviewed redistribution rights.
   `.gitignore` reduces accidental additions but cannot replace review of the staged files;
   see the first rule in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
